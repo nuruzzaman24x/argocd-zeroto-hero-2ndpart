@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+ name: build-push-wf-template
+ namespace: argo
+spec:
+ templates:
+   - name: build-and-push
+     inputs:
+       artifacts:
+         - name: source
+           path: /tmp/source
+     volumes:
+       - name: docker-config-secret
+         secret:
+           secretName: docker-config-secret
+           items:
+             - key: .dockerconfigjson
+               path: config.json
+     container:
+       #image: moby/buildkit:v0.9.3-rootless
+       image: moby/buildkit:v0.11.6
+       command: ["buildctl-daemonless.sh"]
+       args:
+         - build
+         - --frontend
+         - dockerfile.v0
+         - --local
+         - context=.
+         - --local
+         - dockerfile=.
+         - --output
+         - type=image,name={{workflow.parameters.docker-hosted}}/nginx:{{workflow.uid}},push=true,registry.insecure=true
+       workingDir: /tmp/source/v17-combining-argo-tools/app
+       env:
+         - name: BUILDKITD_FLAGS
+           value: --oci-worker-no-process-sandbox
+         - name: DOCKER_CONFIG
+           value: /.docker
+       volumeMounts:
+         - name: docker-config-secret
+           mountPath: /.docker
+       securityContext:
+         privileged: true
+       readinessProbe:
+         exec:
+           command: [sh, -c, "buildctl debug workers"]
