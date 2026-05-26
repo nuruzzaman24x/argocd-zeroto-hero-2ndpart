@@ -1,21 +1,3 @@
-# apiVersion: networking.k8s.io/v1
-# kind: Ingress
-# metadata:
-#   name: blue-green-ingress
-# spec:
-#   ingressClassName: nginx
-#   rules:
-#   - host: blue-green.demo
-#     http:
-#       paths:
-#       - path: /
-#         pathType: Prefix
-#         backend:
-#           service:
-#             name: rollout-bluegreen-active
-#             port:
-#               number: 5000
-
 apiVersion: networking.k8s.io/v1	# এটি Kubernetes-এর Ingress API ব্যবহার করছে
 kind: Ingress		#  এটি একটি Ingress Resource, যা HTTP এবং HTTPS ট্র্যাফিক রাউট করার জন্য ব্যবহৃত হয়।
 metadata:
