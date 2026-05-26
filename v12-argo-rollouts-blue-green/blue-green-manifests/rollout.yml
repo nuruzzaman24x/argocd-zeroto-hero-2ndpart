@@ -1,58 +1,122 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+# apiVersion: argoproj.io/v1alpha1
+# kind: Rollout
+# metadata:
+#   name: blue-green-deployment
+# spec:
+#   replicas: 4
+#   selector:
+#     matchLabels:
+#       app: blue-green-deployment
+#   template:
+#     metadata:
+#       labels:
+#         app: blue-green-deployment
+#     spec:
+#       containers:
+#       - name: blue-green
+#         image: blue-green
+#         imagePullPolicy: Never
+#         env:
+#         - name: html_name
+#           value: "app-v1.html"
+#         ports:
+#         - containerPort: 5000
+#   strategy:
+#     blueGreen: 
+#       activeService: rollout-bluegreen-active
+#       previewService: rollout-bluegreen-preview
+#       autoPromotionEnabled: false
+#       # abortScaleDownDelaySeconds: 10
+#       # autoPromotionEnabled: false
+#       # scaleDownDelaySeconds: 60
+#       # previewReplicaCount: 2
+#       # autoPromotionSeconds: 20
+# ---
+# kind: Service
+# apiVersion: v1
+# metadata:
+#   name: rollout-bluegreen-active
+# spec:
+#   selector:
+#     app: blue-green-deployment
+#   ports:
+#   - protocol: TCP
+#     port: 5000
+#     targetPort: 5000
+
+# ---
+# kind: Service
+# apiVersion: v1
+# metadata:
+#   name: rollout-bluegreen-preview
+# spec:
+#   selector:
+#     app: blue-green-deployment
+#   ports:
+#   - protocol: TCP
+#     port: 5000
+#     targetPort: 5000
+
+
+apiVersion: argoproj.io/v1alpha1	# এটি Argo Rollouts API-এর একটি কনফিগারেশন।
+kind: Rollout	# এটি Deployment-এর একটি উন্নত সংস্করণ, যেখানে Blue-Green Deployment ব্যবহৃত হচ্ছে।
 metadata:
-  name: blue-green-deployment
+  name: blue-green-deployment	# এই Rollout-এর নাম
 spec:
   replicas: 4
   selector:
     matchLabels:
-      app: blue-green-deployment
+      app: blue-green-deployment	# এই লেবেল থাকা Pod-গুলিকে এই Rollout পরিচালনা করবে।
+  strategy:
+    blueGreen:
+      activeService: rollout-bluegreen-active		# Active (লাইভ) ভার্সনের সার্ভিস, যেখানে ট্র্যাফিক পাঠানো হবে।
+      autoPromotionEnabled: false				# নতুন ভার্সন অটোমেটিক লাইভ হবে না।, manually korte hobe
+      previewService: rollout-bluegreen-preview	#নতুন ভার্সনের সার্ভিস, যা পরীক্ষার জন্য ব্যবহার হবে কিন্তু ইউজার ট্র্যাফিক এখানে আসবে না।
+      # abortScaleDownDelaySeconds: 10		# ডিপ্লয়মেন্ট ব্যর্থ হলে 10 সেকেন্ড অপেক্ষা করে rollback করবে
+      # scaleDownDelaySeconds: 60			# পুরানো ভার্সনের Pod-গুলি ডিলিট হওয়ার আগে 60 সেকেন্ড অপেক্ষা করবে।
+      # previewReplicaCount: 2		# নতুন ভার্সনের সার্ভিস/ Preview সার্ভিসে 2টি Pod চলবে।
+      # autoPromotionSeconds: 20	# ২০ সেকেন্ড পরে নতুন ভার্সন অটো প্রোমোট হবে (যদি autoPromotionEnabled: true দেওয়া হয়)।
   template:
     metadata:
       labels:
-        app: blue-green-deployment
+        app: blue-green-deployment		# এই Pod-গুলির লেবেল হবে app: blue-green-deployment।
     spec:
       containers:
-      - name: blue-green
-        image: blue-green
-        imagePullPolicy: Never
-        env:
+      - env:
         - name: html_name
-          value: "app-v1.html"
+          value: "app-v1.html"		#app-v1.html  app-v2.html
+        image: nuruzzaman24x/blue-green:latest
+        imagePullPolicy: IfNotPresent # IfNotPresent, Never, Always #
+        name: blue-green
         ports:
-        - containerPort: 5000
-  strategy:
-    blueGreen: 
-      activeService: rollout-bluegreen-active
-      previewService: rollout-bluegreen-preview
-      autoPromotionEnabled: false
-      # abortScaleDownDelaySeconds: 10
-      # autoPromotionEnabled: false
-      # scaleDownDelaySeconds: 60
-      # previewReplicaCount: 2
-      # autoPromotionSeconds: 20
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: rollout-bluegreen-active
-spec:
-  selector:
-    app: blue-green-deployment
-  ports:
-  - protocol: TCP
-    port: 5000
-    targetPort: 5000
+        - containerPort: 5000 	# এই কন্টেইনারের ভেতরে অ্যাপ্লিকেশন 6000 পোর্টে রান হবে।
+
 
 ---
-kind: Service
-apiVersion: v1
+apiVersion: v1  # এটি Kubernetes-এর মূল API-এর v1 ভার্সন ব্যবহার করছে
+kind: Service # এটি একটি Kubernetes Service, যা Pods-এর জন্য Load Balancing এবং Network Access নিশ্চিত করে।
 metadata:
-  name: rollout-bluegreen-preview
+  name: rollout-bluegreen-active  #এটি সার্ভিসের নাম, যা Blue-Green Deployment-এর Active Version পরিচালনা করবে।
 spec:
-  selector:
-    app: blue-green-deployment
   ports:
-  - protocol: TCP
-    port: 5000
-    targetPort: 5000
+  - port: 5000    # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
+    protocol: TCP
+    targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে।
+  selector:
+    app: blue-green-deployment  # এই সার্ভিসটি শুধুমাত্র blue-green-deployment লেবেলযুক্ত Pods-এর জন্য কাজ করবে
+  type: ClusterIP
+
+
+---
+apiVersion: v1  # এটি Kubernetes-এর মূল API-এর v1 ভার্সন ব্যবহার করছে
+kind: Service # এটি একটি Kubernetes Service, যা Pods-এর জন্য Load Balancing এবং Network Access নিশ্চিত করে।
+metadata:
+  name: rollout-bluegreen-preview 
+spec:
+  ports:
+  - port: 5000    # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
+    protocol: TCP
+    targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 6000 পোর্টে কাজ করবে।
+  selector:
+    app: blue-green-deployment  # এই সার্ভিসটি শুধুমাত্র blue-green-deployment লেবেলযুক্ত Pods-এর জন্য কাজ করবে
+  type: ClusterIP
