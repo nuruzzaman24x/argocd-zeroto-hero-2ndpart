@@ -1,17 +1,39 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: rollouts-traffic-management
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#   - host: rollouts-traffic-management.demo
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: stable-service
+#             port:
+#               number: 5000
+
+
+
+apiVersion: networking.k8s.io/v1    # এটি Kubernetes-এর Ingress API ব্যবহার করছে
+kind: Ingress       #  এটি একটি Ingress Resource, যা HTTP এবং HTTPS ট্র্যাফিক রাউট করার জন্য ব্যবহৃত হয়।
 metadata:
-  name: rollouts-traffic-management
+  name: rollouts-traffic-management  # এটি Ingress Resource-এর নাম।
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
-  ingressClassName: nginx
-  rules:
-  - host: rollouts-traffic-management.demo
-    http:
+  ingressClassName: nginx       # Ingress Controller হিসেবে nginx ব্যবহার করা হচ্ছে
+  rules:    #ক্লাস্টারে nginx-ingress-controller চালু thakte hobe,kubectl get pods -n ingress-nginx #
+  - host: rollouts-traffic-management.demo  # ডোমেইন blue-green.demo-তে যখন কোনো রিকোয়েস্ট আসবে, তখন এটি নির্দিষ্ট সার্ভিসে পাঠাবে।
+    http:               # ডোমেইন রেজিস্টার করা না থাকলে /etc/hosts ফাইল আপডেট করুন
       paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
+      - backend:
+          service:          # এই Ingress Resource rollout-bluegreen-active সার্ভিসে HTTP ট্র্যাফিক পাঠাবে।
             name: stable-service
             port:
               number: 5000
+        path: /             # Root path /-এ আসা সব HTTP রিকোয়েস্ট Ingress-এর মাধ্যমে সার্ভিসে যাবে।
+        pathType: Prefix        # যে কোনো / দিয়ে শুরু হওয়া URL রাউট করা হবে।

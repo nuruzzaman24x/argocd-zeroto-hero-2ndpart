@@ -4,15 +4,15 @@ metadata:
   name: rollouts-traffic-management
 spec:
   replicas: 5
+  selector:
+    matchLabels:
+      app: rollouts-traffic-management
   strategy:
     canary:
       # dynamicStableScale: true
       # abortScaleDownDelaySeconds: 20
       canaryService: canary-service
       stableService: stable-service
-      trafficRouting:
-        nginx:
-          stableIngress: rollouts-traffic-management
       steps:
       - setWeight: 20 # Using Setweight Only
       - pause: {}
@@ -21,21 +21,21 @@ spec:
       #    weight: 40 
       # - setWeight: 40
       # - pause: {}
-  selector:
-    matchLabels:
-      app: rollouts-traffic-management
+      trafficRouting:
+        nginx:
+          stableIngress: rollouts-traffic-management
   template:
     metadata:
       labels:
         app: rollouts-traffic-management
     spec:
       containers:
-      - name: rollouts-traffic-management
-        image: canary # This is the same image that we built in the previous session (v12-argo-rollouts-blue-green) , I just re-tagged it
-        imagePullPolicy: Never
-        env:
+      - env:
         - name: html_name
           value: "app-v1.html"
+        image: nuruzzaman24x/canary
+        name: rollouts-traffic-management
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5000
 ---
