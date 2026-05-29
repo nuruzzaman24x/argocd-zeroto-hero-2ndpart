@@ -9,6 +9,11 @@ spec:
       app: rollouts-setweight   #এই Rollout শুধুমাত্র "rolling-update" লেবেলযুক্ত Pods এর জন্য কাজ করবে।
   strategy:
     canary:   #এটি Canary Deployment স্ট্রাটেজি ব্যবহার করবে, যেখানে নতুন ভার্সন ধীরে ধীরে প্রোডাকশনে পৌঁছাবে এবং সময়ের সাথে তার ট্রাফিক ও ভার্সন বাড়ানো হবে।     
+
+      trafficRouting:   # এটা মানে:  Traffic কিভাবে control হবে তার rule  মানে Argo Rollouts এখানে decide করে:  traffic pod এ যাবে? না ingress level এ যাবে?
+        nginx:          #এটা বলছে:  NGINX Ingress Controller use করো  মানে NGINX Ingress Controller দিয়ে traffic manage হবে।
+          stableIngress: rolling-update   #এর মানে:  “যে Ingress দিয়ে আসল production traffic ঢোকে, তার নাম হলো rolling-update”  তোমার cluster এ ৩টা জিনিস আছে:  User (browser) request পাঠায়, Ingress (rolling-update) traffic ঢোকার দরজা, Services / Pods= backend apps
+
       steps:       
       - setWeight: 20	# #নতুন version এ ২০% traffic যাবে  বাকি ৮০% পুরানো version এ থাকবে
       - pause: {}		#  এখানে কিছুক্ষণ থামবে → দেখে নেবে সব ঠিক আছে কিনা
