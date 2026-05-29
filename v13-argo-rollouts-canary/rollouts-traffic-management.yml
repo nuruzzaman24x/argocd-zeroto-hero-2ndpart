@@ -1,3 +1,69 @@
+# apiVersion: argoproj.io/v1alpha1
+# kind: Rollout
+# metadata:
+#   name: rollouts-traffic-management
+# spec:
+#   replicas: 5
+#   selector:
+#     matchLabels:
+#       app: rollouts-traffic-management
+#   strategy:
+#     canary:
+#       dynamicStableScale: true    # ধরো:  5টা total pod canary scale বাড়ছে  তখন normally:  old pod fixed থাকে new pod বাড়ে  কিন্তু dynamicStableScale: true দিলে: new pod বাড়লে old pod নিজে নিজে কমে যাবে
+#       # abortScaleDownDelaySeconds: 20
+#       canaryService: canary-service
+#       stableService: stable-service
+#       steps:
+#       - setWeight: 20 # Using Setweight Only
+#       - pause: {}
+#       # ....................
+#       - setCanaryScale: # Using SetCanaryScale with SetWeight
+#           weight: 40 
+#       - setWeight: 40
+#       - pause: {}
+#       trafficRouting:
+#         nginx:
+#           stableIngress: rollouts-traffic-management
+#   template:
+#     metadata:
+#       labels:
+#         app: rollouts-traffic-management
+#     spec:
+#       containers:
+#       - env:
+#         - name: html_name
+#           value: "app-v1.html"
+#           # value: "app-v2.html"
+#         image: nuruzzaman24x/canary
+#         name: rollouts-traffic-management
+#         imagePullPolicy: IfNotPresent
+#         ports:
+#         - containerPort: 5000
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: canary-service
+# spec:
+#   ports:
+#   - port: 5000
+#     targetPort: 5000
+#   selector:
+#     app: rollouts-traffic-management
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: stable-service
+# spec:
+#   ports:
+#   - port: 5000
+#     targetPort: 5000
+#   selector:
+#     app: rollouts-traffic-management
+
+
+
 apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
@@ -9,18 +75,18 @@ spec:
       app: rollouts-traffic-management
   strategy:
     canary:
-      # dynamicStableScale: true
+      dynamicStableScale: true    # ধরো:  5টা total pod canary scale বাড়ছে  তখন normally:  old pod fixed থাকে new pod বাড়ে  কিন্তু dynamicStableScale: true দিলে: new pod বাড়লে old pod নিজে নিজে কমে যাবে
       # abortScaleDownDelaySeconds: 20
       canaryService: canary-service
       stableService: stable-service
       steps:
-      - setWeight: 20 # Using Setweight Only
-      - pause: {}
+      # - setWeight: 20 # মানে:  নতুন version (canary) এ 20% traffic যাবে 80% যাবে old version এ  এটা হচ্ছে প্রথম test phase
+      # - pause: {}     # মানে:  এখানে rollout থেমে যাবে manual/automatic check করার সময়
       # ....................
-      # - setCanaryScale: # Using SetCanaryScale with SetWeight
-      #    weight: 40 
-      # - setWeight: 40
-      # - pause: {}
+      - setCanaryScale: # canary pod scaling control করবে  শুধু traffic না pod সংখ্যাও adjust করবে  সহজভাবে Traffic 40% করতে চাইলে  আগে pod count adjust করো
+          weight: 40    # Total replicas = 10  তাহলে: 40×10/100=4  মানে:  4 ta canary pod চালু থাকবে  এটা traffic না এটা শুধু pod count
+      - setWeight: 40   # এবার 40% traffic যাবে new version এ 60% থাকবে old version এ  এটা second stage rollout
+      - pause: {}
       trafficRouting:
         nginx:
           stableIngress: rollouts-traffic-management
