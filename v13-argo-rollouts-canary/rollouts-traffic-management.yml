@@ -32,7 +32,8 @@ spec:
       containers:
       - env:
         - name: html_name
-          value: "app-v1.html"
+          # value: "app-v1.html"
+          value: "app-v2.html"
         image: nuruzzaman24x/canary
         name: rollouts-traffic-management
         imagePullPolicy: IfNotPresent
