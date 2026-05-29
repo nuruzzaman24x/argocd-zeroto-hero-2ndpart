@@ -1,38 +1,41 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+apiVersion: argoproj.io/v1alpha1	#এটি Argo Rollouts CRD (Custom Resource Definition) ব্যবহার করছে।
+kind: Rollout	#এটি Deployment এর বিকল্প, যেখানে Advanced Deployment Strategy ব্যবহার করা যায় (Blue-Green, Canary ইত্যাদি)।
 metadata:
-  name: rolling-update
+  name: rolling-update		# এই Rollout এর নাম "rolling-update
 spec:
   replicas: 5
-  strategy:
-    canary:
-      maxSurge: 2
-      maxUnavailable: 2
   selector:
     matchLabels:
-      app: rolling-update
+      app: rolling-update	#এই Rollout শুধুমাত্র "rolling-update" লেবেলযুক্ত Pods এর জন্য কাজ করবে।
+  strategy:
+    canary:			#এটি Canary Deployment ব্যবহার করবে
+      maxSurge: 2		#একবারে ২টি নতুন pod তৈরি হতে পারবে।
+      maxUnavailable: 2	#একবারে ২টি pod unavailable হতে পারবে (পুরনো pod ধাপে ধাপে নতুন pod দিয়ে পরিবর্তন হবে)।
   template:
     metadata:
       labels:
         app: rolling-update
     spec:
       containers:
-      - name: rolling-update
-        image: canary # This is the same image that we built in the previous session (v12-argo-rollouts-blue-green) , I just re-tagged it
-        imagePullPolicy: Never
-        env:
+      - env:
         - name: html_name
-          value: "app-v1.html"
+          # value: "app-v1.html"
+          value: "app-v2.html"
+        image: nuruzzaman24x/canary
+        imagePullPolicy: IfNotPresent
+        name: rolling-update
         ports:
         - containerPort: 5000
 ---
-apiVersion: v1
-kind: Service
+apiVersion: v1  # এটি Kubernetes-এর মূল API-এর v1 ভার্সন ব্যবহার করছে
+kind: Service # এটি একটি Kubernetes Service, যা Pods-এর জন্য Load Balancing এবং Network Access নিশ্চিত করে।
 metadata:
-  name: rolling-update
+ name: rolling-update
 spec:
-  ports:
-  - port: 5000
-    targetPort: 5000
-  selector:
-    app: rolling-update
+ ports:
+ - port: 5000    # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
+   protocol: TCP
+   targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে।
+ selector:
+   app: rolling-update  # এই সার্ভিসটি শুধুমাত্র blue-green-deployment লেবেলযুক্ত Pods-এর জন্য কাজ করবে
+ type: ClusterIP
