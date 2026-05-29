@@ -10,7 +10,7 @@ spec:
   strategy:
     canary:			#এটি Canary Deployment ব্যবহার করবে
       maxSurge: 2		#একবারে ২টি নতুন pod তৈরি হতে পারবে।
-      maxUnavailable: 2	#একবারে ২টি pod unavailable হতে পারবে (পুরনো pod ধাপে ধাপে নতুন pod দিয়ে পরিবর্তন হবে)।
+      maxUnavailable: 0	#একবারে ২টি pod unavailable হতে পারবে (পুরনো pod ধাপে ধাপে নতুন pod দিয়ে পরিবর্তন হবে)।
   template:
     metadata:
       labels:
