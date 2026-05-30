@@ -69,7 +69,8 @@ kind: Rollout
 metadata:
   name: rollouts-traffic-management
 spec:
-  replicas: 5
+  replicas: 3
+  # replicas: 5
   selector:
     matchLabels:
       app: rollouts-traffic-management
@@ -85,7 +86,7 @@ spec:
       # ....................
       - setCanaryScale: # canary pod scaling control করবে  শুধু traffic না pod সংখ্যাও adjust করবে  সহজভাবে Traffic 40% করতে চাইলে  আগে pod count adjust করো
           weight: 40    # Total replicas = 10  তাহলে: 40×10/100=4  মানে:  4 ta canary pod চালু থাকবে  এটা traffic না এটা শুধু pod count
-      - setWeight: 40   # এবার 40% traffic যাবে new version এ 60% থাকবে old version এ  এটা second stage rollout
+      - setWeight: 30   # এবার 40% traffic যাবে new version এ 60% থাকবে old version এ  এটা second stage rollout
       - pause: {}
       trafficRouting:
         nginx:
@@ -98,8 +99,8 @@ spec:
       containers:
       - env:
         - name: html_name
-          # value: "app-v1.html"
-          value: "app-v2.html"
+          value: "app-v1.html"
+          # value: "app-v2.html"
         image: nuruzzaman24x/canary
         name: rollouts-traffic-management
         imagePullPolicy: IfNotPresent

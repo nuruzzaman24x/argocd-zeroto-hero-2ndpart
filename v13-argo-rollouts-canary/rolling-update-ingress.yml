@@ -1,19 +1,19 @@
 apiVersion: networking.k8s.io/v1    # এটি Kubernetes-এর Ingress API ব্যবহার করছে
 kind: Ingress       #  এটি একটি Ingress Resource, যা HTTP এবং HTTPS ট্র্যাফিক রাউট করার জন্য ব্যবহৃত হয়।
 metadata:
- name: rolling-update  # এটি Ingress Resource-এর নাম।
- annotations:
-   nginx.ingress.kubernetes.io/rewrite-target: /
+  name: rolling-update  # এটি Ingress Resource-এর নাম।
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
- ingressClassName: nginx       # Ingress Controller হিসেবে nginx ব্যবহার করা হচ্ছে
- rules:    #ক্লাস্টারে nginx-ingress-controller চালু thakte hobe,kubectl get pods -n ingress-nginx #
- - host: rolling-update.demo  # ডোমেইন blue-green.demo-তে যখন কোনো রিকোয়েস্ট আসবে, তখন এটি নির্দিষ্ট সার্ভিসে পাঠাবে।
-   http:               # ডোমেইন রেজিস্টার করা না থাকলে /etc/hosts ফাইল আপডেট করুন
-     paths:
-     - backend:
-         service:          # এই Ingress Resource rollout-bluegreen-active সার্ভিসে HTTP ট্র্যাফিক পাঠাবে।
-           name: rolling-update
-           port:
-             number: 5000
-       path: /             # Root path /-এ আসা সব HTTP রিকোয়েস্ট Ingress-এর মাধ্যমে সার্ভিসে যাবে।
-       pathType: Prefix        # যে কোনো / দিয়ে শুরু হওয়া URL রাউট করা হবে।
+  ingressClassName: nginx       # Ingress Controller হিসেবে nginx ব্যবহার করা হচ্ছে
+  rules:    # এখানে rules মানে হলো:  কোন request কোথায় যাবে তার routing rules  অর্থাৎ Ingress-এর traffic forwarding policy ধরো তুমি একটা অফিসের receptionist।  লোকজন আসলে তুমি rule অনুযায়ী তাদের পাঠাও:  HR related → HR room Accounts related → Accounts room IT related → IT room  Ingress-এর rules ঠিক এই কাজটাই করে।
+  - host: rolling-update.demo  # ডোমেইন blue-green.demo-তে যখন কোনো রিকোয়েস্ট আসবে, তখন এটি নির্দিষ্ট সার্ভিসে পাঠাবে।
+    http:               # HTTP request এর জন্য routing rules   ধরো browser থেকে request আসলো:    http://rollouts-setweight.demo     তখন Ingress HTTP layer এ request process করবে। ধরো একটা shopping mall আছে।  Host = কোন mall? HTTP = mall এর ভিতরে ঢোকার পর কী rule follow হবে?
+      paths:   #কোন URL path এ কোন service এ পাঠাবো? Example paths: - path: /  মানে:  সব URL  যেমন:  /  /login  /dashboard  /api/users  সব match করবে।  আর যদি:  paths: - path: /api  তাহলে:  /api /api/users /api/products  শুধু এগুলো match করবে। ধরো mall এর ভিতরে:  Food Court Cinema Shopping Zone  paths বলে দেয়:  কোন রাস্তা দিয়ে গেলে কোথায় যাবে
+      - backend:   #এটাই সবচেয়ে important।মানে: শেষ পর্যন্ত request কোথায় পাঠাবো? kubectl get svc kore je output asbe oi service a pathabeএটাই সবচেয়ে important।  মানে:    শেষ পর্যন্ত request কোথায় পাঠাবো? kubectl get svc kore je output asbe oi service a pathabe
+          service:          # এই Ingress Resource rollout-bluegreen-active সার্ভিসে HTTP ট্র্যাফিক পাঠাবে।
+            name: rolling-update
+            port:
+              number: 5000
+        path: /             # Root path /-এ আসা সব HTTP রিকোয়েস্ট Ingress-এর মাধ্যমে সার্ভিসে যাবে।
+        pathType: Prefix        # যে কোনো / দিয়ে শুরু হওয়া URL রাউট করা হবে।

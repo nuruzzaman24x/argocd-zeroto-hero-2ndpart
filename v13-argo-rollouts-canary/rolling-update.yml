@@ -8,9 +8,9 @@ spec:
     matchLabels:
       app: rolling-update	#এই Rollout শুধুমাত্র "rolling-update" লেবেলযুক্ত Pods এর জন্য কাজ করবে।
   strategy:
-    canary:			#এটি Canary Deployment ব্যবহার করবে
-      maxSurge: 2		#একবারে ২টি নতুন pod তৈরি হতে পারবে।
-      maxUnavailable: 0	#একবারে ২টি pod unavailable হতে পারবে (পুরনো pod ধাপে ধাপে নতুন pod দিয়ে পরিবর্তন হবে)।
+    canary:			# এটি Canary Deployment ব্যবহার করবে
+      maxSurge: 2		# একবারে ২টি নতুন pod তৈরি হতে পারবে।
+      maxUnavailable: 2	#  ২টি pod unavailable হতে পারবে (পুরনো pod ধাপে ধাপে নতুন pod দিয়ে পরিবর্তন হবে)।
   template:
     metadata:
       labels:
@@ -30,12 +30,12 @@ spec:
 apiVersion: v1  # এটি Kubernetes-এর মূল API-এর v1 ভার্সন ব্যবহার করছে
 kind: Service # এটি একটি Kubernetes Service, যা Pods-এর জন্য Load Balancing এবং Network Access নিশ্চিত করে।
 metadata:
- name: rolling-update
+  name: rolling-update
 spec:
- ports:
- - port: 5000    # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
-   protocol: TCP
-   targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে।
- selector:
-   app: rolling-update  # এই সার্ভিসটি শুধুমাত্র blue-green-deployment লেবেলযুক্ত Pods-এর জন্য কাজ করবে
- type: ClusterIP
+  ports:
+    - port: 5000    # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
+      protocol: TCP
+      targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে।
+  selector:
+    app: rolling-update  # এই সার্ভিসটি শুধুমাত্র blue-green-deployment লেবেলযুক্ত Pods-এর জন্য কাজ করবে
+  type: ClusterIP
