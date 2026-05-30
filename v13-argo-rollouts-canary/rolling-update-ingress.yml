@@ -8,12 +8,12 @@ spec:
   ingressClassName: nginx       # Ingress Controller হিসেবে nginx ব্যবহার করা হচ্ছে
   rules:    # এখানে rules মানে হলো:  কোন request কোথায় যাবে তার routing rules  অর্থাৎ Ingress-এর traffic forwarding policy ধরো তুমি একটা অফিসের receptionist।  লোকজন আসলে তুমি rule অনুযায়ী তাদের পাঠাও:  HR related → HR room Accounts related → Accounts room IT related → IT room  Ingress-এর rules ঠিক এই কাজটাই করে।
   - host: rolling-update.demo  # ডোমেইন blue-green.demo-তে যখন কোনো রিকোয়েস্ট আসবে, তখন এটি নির্দিষ্ট সার্ভিসে পাঠাবে।
-    http:               # HTTP request এর জন্য routing rules   ধরো browser থেকে request আসলো:    http://rollouts-setweight.demo     তখন Ingress HTTP layer এ request process করবে। ধরো একটা shopping mall আছে।  Host = কোন mall? HTTP = mall এর ভিতরে ঢোকার পর কী rule follow হবে?
+    http:               # HTTP request এর জন্য routing rules   ধরো browser থেকে request আসলো:    http://rolling-update.demo     তখন Ingress HTTP layer এ request process করবে। ধরো একটা shopping mall আছে।  Host = কোন mall? HTTP = mall এর ভিতরে ঢোকার পর কী rule follow হবে?
       paths:   #কোন URL path এ কোন service এ পাঠাবো? Example paths: - path: /  মানে:  সব URL  যেমন:  /  /login  /dashboard  /api/users  সব match করবে।  আর যদি:  paths: - path: /api  তাহলে:  /api /api/users /api/products  শুধু এগুলো match করবে। ধরো mall এর ভিতরে:  Food Court Cinema Shopping Zone  paths বলে দেয়:  কোন রাস্তা দিয়ে গেলে কোথায় যাবে
       - backend:   #এটাই সবচেয়ে important।মানে: শেষ পর্যন্ত request কোথায় পাঠাবো? kubectl get svc kore je output asbe oi service a pathabeএটাই সবচেয়ে important।  মানে:    শেষ পর্যন্ত request কোথায় পাঠাবো? kubectl get svc kore je output asbe oi service a pathabe
-          service:          # এই Ingress Resource rollout-bluegreen-active সার্ভিসে HTTP ট্র্যাফিক পাঠাবে।
-            name: rolling-update
+          service:          # Ingress request টা একটা Kubernetes Service এ পাঠাবে।  Ingress কখনো Pod-এ সরাসরি traffic পাঠায় না।
+            name: rolling-update    # rolling-update নামের Service এ request পাঠাও।  যদি তুমি চালাও:  kubectl get svc তাহলে এরকম কিছু দেখবে:  NAME rolling-update  Ingress ওই Service-টাকে খুঁজে বের করবে।
             port:
-              number: 5000
-        path: /             # Root path /-এ আসা সব HTTP রিকোয়েস্ট Ingress-এর মাধ্যমে সার্ভিসে যাবে।
-        pathType: Prefix        # যে কোনো / দিয়ে শুরু হওয়া URL রাউট করা হবে।
+              number: 5000    #মানে:  Service এর 5000 port ব্যবহার করো। spec:   ports:   - port: 5000     targetPort: 5000  তখন Ingress request পাঠাবে:  rolling-update:5000
+        path: /     #এগুলো একসাথে কাজ করে।  1️⃣ path: / মানে:  কোন URL path match করবো?  এখানে / মানে root path।  Example  যদি user browser এ যায়:  https://rolling-update.demo/  তাহলে path হবে:  /  এটা match করবে।  2️⃣ pathType: Prefix pathType: Prefix  এটাই সবচেয়ে important।  এর মানে:  path "/" দিয়ে শুরু হলে match করো তাহলে কোন URL গুলো match করবে?  কারণ path হলো /  এবং pathType হলো Prefix  তাই:  / /login /dashboard /api /api/users /products  সব match করবে।  কারণ সব URL-ই / দিয়ে শুরু।  Real Example  ধরো user browser এ গেল:  https://rolling-update.demo/login  Ingress check করবে:  Rule path: / pathType: Prefix Check /login কি "/" দিয়ে শুরু?  ✅ হ্যাঁ  তাই request backend service-এ যাবে।  যদি Prefix না হয়ে Exact হতো? path: / pathType: Exact  তাহলে শুধু:  https://rolling-update.demo/  match করতো।  কিন্তু:  /login /dashboard /api  match করতো না।
+        pathType: Prefix
