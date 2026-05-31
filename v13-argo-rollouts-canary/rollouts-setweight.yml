@@ -10,7 +10,7 @@ spec:
   strategy:
     canary:   #এটি Canary Deployment স্ট্রাটেজি ব্যবহার করবে, যেখানে নতুন ভার্সন ধীরে ধীরে প্রোডাকশনে পৌঁছাবে এবং সময়ের সাথে তার ট্রাফিক ও ভার্সন বাড়ানো হবে।     
       steps:       
-      - setWeight: 20	# #নতুন version এ ২০% traffic যাবে, mane 1 ta pod  বাকি ৮০% পুরানো version এ থাকবে
+      - setWeight: 30	# #নতুন version এ ২০% traffic যাবে, mane 1 ta pod  বাকি ৮০% পুরানো version এ থাকবে
       - pause: {}		#  এখানে কিছুক্ষণ থামবে → দেখে নেবে সব ঠিক আছে কিনা
       - setWeight: 40			# এখন ৪০% traffic নতুন version এ যাবে Pause: 10s  ১০ সেকেন্ড অপেক্ষা করবে
       - pause: {duration: 10s}
@@ -26,8 +26,8 @@ spec:
       containers:
       - env:
         - name: html_name
-          value: "app-v1.html"
-          # value: "app-v2.html"
+          # value: "app-v1.html"
+          value: "app-v2.html"
         image: nuruzzaman24x/canary
         imagePullPolicy: IfNotPresent
         name: rollouts-setweight

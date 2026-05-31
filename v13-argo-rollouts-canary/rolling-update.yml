@@ -10,7 +10,7 @@ spec:
   strategy:
     canary:			# এটি Canary Deployment ব্যবহার করবে
       maxSurge: 2		# replicas: 5 maxSurge: 2  Normal অবস্থায়: 5 pod, Update শুরু হলে Kubernetes সর্বোচ্চ:  5 + 2 = 7 pod  চালাতে পারবে।  এই অতিরিক্ত 2 pod-ই হলো surge pod। ধরো old version এর 5 pod চলছে।  নতুন version deploy করতে হবে।  যদি old pod আগে delete করো, তাহলে service interruption হতে পারে।  তাই Kubernetes আগে নতুন pod তৈরি করে:  Old = 5 New = 2 Total = 7  তারপর old pod ধীরে ধীরে remove করে।  Example ধরো:  replicas: 5 maxSurge: 2 শুরু Old = 5 New = 0 Total = 5 Update শুরু Old = 5 New = 2 Total = 7 কিছুক্ষণ পরে Old = 3 New = 2 Total = 5 শেষে Old = 0 New = 5 Total = 5
-      maxUnavailable: 0	#  maxUnavailable: 2 হলো rollout/update চলার সময় সর্বোচ্চ কতগুলো Pod unavailable (service দিতে পারবে না) থাকতে পারবে তার limit।
+      maxUnavailable: 2	#  maxUnavailable: 2 হলো rollout/update চলার সময় সর্বোচ্চ কতগুলো Pod unavailable (service দিতে পারবে না) থাকতে পারবে তার limit।
   template:
     metadata:
       labels:
