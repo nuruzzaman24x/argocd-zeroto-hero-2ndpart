@@ -1,69 +1,55 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+apiVersion: argoproj.io/v1alpha1        #Argo Rollouts এর জন্য API ভার্সন
+kind: Rollout                           #এটি একটি Rollout কনফিগারেশন, যা Blue-Green deployment পরিচালনা করবে
 metadata:
-  name: blue-green-deployment
-spec:
-  replicas: 4
-  selector:
+  name: blue-green-deployment   #Rollout-এর নাম সেট করে, যা kubectl get rollout দিয়ে খুঁজতে পারবে
+spec:                                           #Rollout-এর মূল কনফিগারেশন
+  replicas: 4                           #একই সময়ে ৪টি পড তৈরি করবে
+  selector:                                     #এই লেবেলের সাথে মিলিয়ে পড নির্বাচন করবে
     matchLabels:
       app: blue-green-deployment
+  strategy:                                     #Deployment স্ট্রাটেজি
+    blueGreen:                          #Blue-Green strategy ব্যবহার হচ্ছে
+      activeService: rollout-bluegreen-active           #প্রোডাকশনে যে সার্ভিস রান করবে সেটি
+      previewService: rollout-bluegreen-preview #প্রিভিউর জন্য তৈরি সার্ভিস
+      autoPromotionEnabled: true                                #নতুন ভার্সন যদি সফল হয় তাহলে অটো-প্রোমোট করবে
   template:
     metadata:
       labels:
-        app: blue-green-deployment
+        app: blue-green-deployment                              #Pod-এর লেবেল যা selector-এর সাথে মিলবে
     spec:
       containers:
-      - name: blue-green
-        image: blue-green
-        imagePullPolicy: Never
-        env:
+      - env:
         - name: html_name
           value: "app-v1.html"
+        image: nuruzzaman24x/blue-green:latest
+        # image: 40.40.40.2:5000/blue-green:latest
+        imagePullPolicy: IfNotPresent
+        name: blue-green
         ports:
         - containerPort: 5000
-  strategy:
-    blueGreen: 
-      activeService: rollout-bluegreen-active
-      previewService: rollout-bluegreen-preview
-      autoPromotionEnabled: true
-      prePromotionAnalysis:     #### Pre-Promotion Analysis
-        templates:
-        - templateName: success-rate-pre
-        args:
-        - name: service-namespace
-          value: blue-green
-      # postPromotionAnalysis:    #### Post-Promotion Analysis
-      #  templates:
-      #  - templateName: success-rate-post
-      #  args:
-      #  - name: service-namespace
-      #    value: blue-green
-      # abortScaleDownDelaySeconds: 10
-      # scaleDownDelaySeconds: 60
-      # previewReplicaCount: 2
-      # autoPromotionSeconds: 70
 ---
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
   name: rollout-bluegreen-active
 spec:
+  ports:
+  - port: 5000    # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
+    protocol: TCP
+    targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে।
   selector:
     app: blue-green-deployment
-  ports:
-  - protocol: TCP
-    port: 5000
-    targetPort: 5000
+
 
 ---
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
   name: rollout-bluegreen-preview
 spec:
+  ports:
+  - port: 5000    # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
+    protocol: TCP
+    targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে।
   selector:
     app: blue-green-deployment
-  ports:
-  - protocol: TCP
-    port: 5000
-    targetPort: 5000
