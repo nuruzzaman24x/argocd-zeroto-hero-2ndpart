@@ -12,16 +12,17 @@ spec:
     canary:
       # abortScaleDownDelaySeconds: 20
       canaryService: canary-service
-      dynamicStableScale: true    # replicas: 5 dewa thakle andsetWeight: 20 kora thakle 1 ta pod new hisebe jay, baki 4 ta pod old hisebe thake. mean total 5 pod equal theke old new soho. then promote korle baki 4 ta pod new a chole jay.
+      dynamicStableScale: true    # #kora thakle, setWeight 20 jodi thake then new a 1 ta pod jabe but old 5 pods e thakbe, total pod hobe 6 ta old new soho then promote korle 20 sec por old pod delete hoya suru korbe. # kora na thakle setWeight 20 kora thakle new revision a akta pod jabe but old a thakbe 4 ta. mane total pod hobe 5 ta old new soho.
       stableService: stable-service
       steps:
-      - setWeight: 20 # মানে:  নতুন version (canary) এ 20% traffic যাবে 80% যাবে old version এ  এটা হচ্ছে প্রথম test phase
-      - pause: {}     # মানে:  এখানে rollout থেমে যাবে manual/automatic check করার সময়
+      # - setWeight: 20 # মানে:  নতুন version (canary) এ 20% traffic যাবে 80% যাবে old version এ  এটা হচ্ছে প্রথম test phase
+      # - pause: {}     # মানে:  এখানে rollout থেমে যাবে manual/automatic check করার সময়
       # ....................
-      # - setCanaryScale: # canary pod scaling control করবে  শুধু traffic না pod সংখ্যাও adjust করবে  সহজভাবে Traffic 40% করতে চাইলে  আগে pod count adjust করো
-      #     weight: 40    # Total replicas = 10  তাহলে: 40×10/100=4  মানে:  4 ta canary pod চালু থাকবে  এটা traffic না এটা শুধু pod count
-      # - setWeight: 30   # এবার 40% traffic যাবে new version এ 60% থাকবে old version এ  এটা second stage rollout
-      # - pause: {}
+      - setCanaryScale: # canary pod scaling control করবে  শুধু traffic না pod সংখ্যাও adjust করবে  সহজভাবে Traffic 40% করতে চাইলে  আগে pod count adjust করো
+          weight: 40    # Total replicas = 5  তাহলে: 60×5/100=3  মানে:  3 ta canary pod চালু থাকবে  এটা traffic না এটা শুধু pod count
+          # replicas: 2   # same with 40
+      - setWeight: 40   # এবার 40% traffic যাবে new version এ mane pod3 te jabe,60% থাকবে old version এ  এটা second stage rollout
+      - pause: {} 
       trafficRouting:     #"Traffic control pod count দিয়ে না করে, external traffic manager (NGINX, Istio, Traefik ইত্যাদি) দিয়ে করো।" যদি এটা না থাকে:  strategy:   canary:     steps:     - setWeight: 20  তাহলে Argo Rollouts traffic percentage calculate করবে pod count দিয়ে।
         nginx:            #এখানে Argo Rollouts-কে বলা হচ্ছে:  "Traffic routing-এর backend হিসেবে NGINX Ingress Controller ব্যবহার করো।"  Argo Rollouts support করে:  NGINX Istio Traefik ALB
           stableIngress: rollouts-traffic-management    #এটাই সবচেয়ে important line।  এটা Argo Rollouts-কে বলে:  "rollouts-traffic-management নামের Ingress-টা হলো আমার main/stable ingress।"  then Argo Rollouts এই ingress-টাকে monitor করে।
@@ -33,8 +34,8 @@ spec:
       containers:
       - env:
         - name: html_name
-          value: "app-v1.html"
-          # value: "app-v2.html"
+          # value: "app-v1.html"
+          value: "app-v2.html"
         image: nuruzzaman24x/canary
         name: rollouts-traffic-management
         imagePullPolicy: IfNotPresent
