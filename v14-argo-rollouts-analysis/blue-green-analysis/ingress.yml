@@ -1,17 +1,17 @@
-apiVersion: networking.k8s.io/v1    # এটি Kubernetes-এর Ingress API ব্যবহার করছে
-kind: Ingress       #  এটি একটি Ingress Resource, যা HTTP এবং HTTPS ট্র্যাফিক রাউট করার জন্য ব্যবহৃত হয়।
-metadata:
-  name: blue-green-ingress  # এটি Ingress Resource-এর নাম।
-spec:
-  ingressClassName: nginx       # Ingress Controller হিসেবে nginx ব্যবহার করা হচ্ছে
-  rules:    #ক্লাস্টারে nginx-ingress-controller চালু thakte hobe,kubectl get pods -n ingress-nginx #
-  - host: blue-green.demo  # ডোমেইন blue-green.demo-তে যখন কোনো রিকোয়েস্ট আসবে, তখন এটি নির্দিষ্ট সার্ভিসে পাঠাবে।
-    http:               # ডোমেইন রেজিস্টার করা না থাকলে /etc/hosts ফাইল আপডেট করুন
-      paths:
-      - backend:
-          service:          # এই Ingress Resource rollout-bluegreen-active সার্ভিসে HTTP ট্র্যাফিক পাঠাবে।
-            name: rollout-bluegreen-active
-            port:
-              number: 5000
-        path: /             # Root path /-এ আসা সব HTTP রিকোয়েস্ট Ingress-এর মাধ্যমে সার্ভিসে যাবে।
-        pathType: Prefix        # যে কোনো / দিয়ে শুরু হওয়া URL রাউট করা হবে।
+apiVersion: networking.k8s.io/v1    # Kubernetes API ভার্সন, যা Ingress Resource-এর জন্য ব্যবহৃত হয়। এটি নিশ্চিত করে যে Ingress Resource সঠিক API ভার্সন ব্যবহার করছে।
+kind: Ingress       #  এটি একটি Ingress Resource কনফিগারেশন, যা ক্লাস্টারের বাইরের ট্র্যাফিককে ক্লাস্টারের ভিতরের সার্ভিসে রাউট করবে। Ingress Resource সাধারণত HTTP এবং HTTPS ট্র্যাফিকের জন্য ব্যবহৃত হয়, এবং এটি ডোমেইন-ভিত্তিক রাউটিং, SSL টার্মিনেশন এবং অন্যান্য Ingress Controller-সম্পর্কিত বৈশিষ্ট্যগুলি সমর্থন করে।
+metadata:         # Ingress Resource-এর মেটাডেটা, যেমন নাম যা kubectl get ingress দিয়ে খুঁজতে পারবে
+  name: blue-green-ingress  # এই Ingress Resource-এর নাম সেট করে, যা kubectl get ingress দিয়ে খুঁজতে পারবে, এবং এটি ক্লাস্টারের বাইরের ট্র্যাফিককে ক্লাস্টারের ভিতরের সার্ভিসে রাউট করবে। Ingress Resource সাধারণত HTTP এবং HTTPS ট্র্যাফিকের জন্য ব্যবহৃত হয়, এবং এটি ডোমেইন-ভিত্তিক রাউটিং, SSL টার্মিনেশন এবং অন্যান্য Ingress Controller-সম্পর্কিত বৈশিষ্ট্যগুলি সমর্থন করে।
+spec:     # Ingress Resource-এর স্পেসিফিকেশন, যা Ingress Controller-কে নির্দেশ করে যে কিভাবে ট্র্যাফিক রাউট করা হবে এবং কোন সার্ভিসে পাঠানো হবে। Ingress Resource সাধারণত HTTP এবং HTTPS ট্র্যাফিকের জন্য ব্যবহৃত হয়, এবং এটি ডোমেইন-ভিত্তিক রাউটিং, SSL টার্মিনেশন এবং অন্যান্য Ingress Controller-সম্পর্কিত বৈশিষ্ট্যগুলি সমর্থন করে।
+  ingressClassName: nginx       # এই Ingress Resource-এর জন্য নির্দিষ্ট Ingress Controller-কে নির্দেশ করে, যা এই ক্ষেত্রে nginx-ingress-controller হবে। Ingress Controller ক্লাস্টারে ইনস্টল করা থাকতে হবে এবং এই নামের সাথে কনফিগার করা থাকতে হবে যাতে এটি এই Ingress Resource-কে সঠিকভাবে হ্যান্ডেল করতে পারে।
+  rules:    # এই Ingress Resource-এর রুলস, যা ডোমেইন এবং পাথ ভিত্তিক রাউটিং কনফিগারেশন নির্ধারণ করে। Ingress Resource সাধারণত HTTP এবং HTTPS ট্র্যাফিকের জন্য ব্যবহৃত হয়, এবং এটি ডোমেইন-ভিত্তিক রাউটিং, SSL টার্মিনেশন এবং অন্যান্য Ingress Controller-সম্পর্কিত বৈশিষ্ট্যগুলি সমর্থন করে।
+  - host: blue-green.demo  # এই রুলটি blue-green.demo ডোমেইনে আসা HTTP রিকোয়েস্টগুলিকে হ্যান্ডেল করবে, এবং এই ডোমেইন রেজিস্টার করা না থাকলে /etc/hosts ফাইল আপডেট করতে হবে যাতে blue-green.demo ডোমেইনটি ক্লাস্টারের Ingress Controller-এর IP ঠিকানার সাথে পয়েন্ট করে।
+    http:               # এই রুলটি HTTP ট্র্যাফিকের জন্য কনফিগার করা হয়েছে, যা blue-green.demo ডোমেইনে আসা HTTP রিকোয়েস্টগুলিকে হ্যান্ডেল করবে, এবং এই ডোমেইন রেজিস্টার করা না থাকলে /etc/hosts ফাইল আপডেট করতে হবে যাতে blue-green.demo ডোমেইনটি ক্লাস্টারের Ingress Controller-এর IP ঠিকানার সাথে পয়েন্ট করে।
+      paths:        # এই রুলের পাথ কনফিগারেশন, যা blue-green.demo ডোমেইনে আসা HTTP রিকোয়েস্টগুলিকে হ্যান্ডেল করবে, এবং এই ডোমেইন রেজিস্টার করা না থাকলে /etc/hosts ফাইল আপডেট করতে হবে যাতে blue-green.demo ডোমেইনটি ক্লাস্টারের Ingress Controller-এর IP ঠিকানার সাথে পয়েন্ট করে।
+      - backend:    # এই পাথ কনফিগারেশন, যা blue-green.demo ডোমেইনে আসা HTTP রিকোয়েস্টগুলিকে হ্যান্ডেল করবে, এবং এই ডোমেইন রেজিস্টার করা না থাকলে /etc/hosts ফাইল আপডেট করতে হবে যাতে blue-green.demo ডোমেইনটি ক্লাস্টারের Ingress Controller-এর IP ঠিকানার সাথে পয়েন্ট করে।
+          service:          # এই ব্যাকএন্ড কনফিগারেশন, যা blue-green.demo ডোমেইনে আসা HTTP রিকোয়েস্টগুলিকে হ্যান্ডেল করবে, এবং এই ডোমেইন রেজিস্টার করা না থাকলে /etc/hosts ফাইল আপডেট করতে হবে যাতে blue-green.demo ডোমেইনটি ক্লাস্টারের Ingress Controller-এর IP ঠিকানার সাথে পয়েন্ট করে।
+            name: rollout-bluegreen-active    # এই সার্ভিসের নাম সেট করে, যা blue-green.demo ডোমেইনে আসা HTTP রিকোয়েস্টগুলিকে হ্যান্ডেল করবে, এবং এই ডোমেইন রেজিস্টার করা না থাকলে /etc/hosts ফাইল আপডেট করতে হবে যাতে blue-green.demo ডোমেইনটি ক্লাস্টারের Ingress Controller-এর IP ঠিকানার সাথে পয়েন্ট করে। এই সার্ভিসটি Rollout কনফিগারেশনের activeService হিসেবে উল্লেখ করা হবে, এবং এটি বর্তমানে সক্রিয় পডগুলোর ট্র্যাফিক হ্যান্ডেল করবে।
+            port:               # এই সার্ভিসের পোর্ট কনফিগারেশন, যা blue-green.demo ডোমেইনে আসা HTTP রিকোয়েস্টগুলিকে হ্যান্ডেল করবে, এবং এই ডোমেইন রেজিস্টার করা না থাকলে /etc/hosts ফাইল আপডেট করতে হবে যাতে blue-green.demo ডোমেইনটি ক্লাস্টারের Ingress Controller-এর IP ঠিকানার সাথে পয়েন্ট করে। এই সার্ভিসটি Rollout কনফিগারেশনের activeService হিসেবে উল্লেখ করা হবে, এবং এটি বর্তমানে সক্রিয় পডগুলোর ট্র্যাফিক হ্যান্ডেল করবে।
+              number: 5000      # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)। এই সার্ভিসটি Rollout কনফিগারেশনের activeService হিসেবে উল্লেখ করা হবে, এবং এটি বর্তমানে সক্রিয় পডগুলোর ট্র্যাফিক হ্যান্ডেল করবে।
+        path: /             # এই পাথ কনফিগারেশন, যা blue-green.demo ডোমেইনে আসা HTTP রিকোয়েস্টগুলিকে হ্যান্ডেল করবে, এবং এই ডোমেইন রেজিস্টার করা না থাকলে /etc/hosts ফাইল আপডেট করতে হবে যাতে blue-green.demo ডোমেইনটি ক্লাস্টারের Ingress Controller-এর IP ঠিকানার সাথে পয়েন্ট করে। এই পাথটি / দিয়ে শুরু হওয়া সব রিকোয়েস্টকে হ্যান্ডেল করবে, এবং এই রিকোয়েস্টগুলিকে Rollout কনফিগারেশনের activeService হিসেবে উল্লেখ করা সার্ভিসে পাঠাবে, যা বর্তমানে সক্রিয় পডগুলোর ট্র্যাফিক হ্যান্ডেল করবে।
+        pathType: Prefix        # এই পাথটাইপ কনফিগারেশন, যা blue-green.demo ডোমেইনে আসা HTTP রিকোয়েস্টগুলিকে হ্যান্ডেল করবে, এবং এই ডোমেইন রেজিস্টার করা না থাকলে /etc/hosts ফাইল আপডেট করতে হবে যাতে blue-green.demo ডোমেইনটি ক্লাস্টারের Ingress Controller-এর IP ঠিকানার সাথে পয়েন্ট করে। এই পাথটাইপটি Prefix হিসেবে সেট করা হয়েছে, যা নির্দেশ করে যে / দিয়ে শুরু হওয়া সব রিকোয়েস্টকে হ্যান্ডেল করবে, এবং এই রিকোয়েস্টগুলিকে Rollout কনফিগারেশনের activeService হিসেবে উল্লেখ করা সার্ভিসে পাঠাবে, যা বর্তমানে সক্রিয় পডগুলোর ট্র্যাফিক হ্যান্ডেল করবে।
