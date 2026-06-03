@@ -1,71 +1,35 @@
-apiVersion: argoproj.io/v1alpha1    # Argo Rollouts এর AnalysisTemplate API ভার্সন
-kind: AnalysisTemplate      # এটি একটি AnalysisTemplate কনফিগারেশন, যা প্রোমোশনের আগে সফলতা হার পরীক্ষা করার জন্য ব্যবহৃত হবে
-metadata:            # AnalysisTemplate-এর মেটাডেটা, যেমন নাম যা kubectl get analysistemplate দিয়ে খুঁজতে পারবে
-  name: success-rate    # AnalysisTemplate-এর নাম সেট করে, যা Rollout কনফিগারেশনে উল্লেখ করা হবে
-spec:     # AnalysisTemplate-এর স্পেসিফিকেশন, যা বিশ্লেষণের জন্য মেট্রিক্স এবং অন্যান্য সেটিংস নির্ধারণ করে
-  metrics:      # এই AnalysisTemplate-এর মেট্রিক্সের তালিকা, যা সফলতা হার পরীক্ষা করার জন্য ব্যবহার হবে
-  - name: success-rate    # এই মেট্রিক্সের নাম, যা Rollout কনফিগারেশনে উল্লেখ করা হবে
-    provider:             # এই মেট্রিক্সের জন্য ব্যবহার করা হবে এমন প্রোভাইডার, যা কিভাবে মেট্রিক্স সংগ্রহ করবে তা নির্ধারণ করে
-      job:      # এই মেট্রিক্সের জন্য একটি জব প্রোভাইডার ব্যবহার করা হচ্ছে, যা একটি পড তৈরি করবে এবং নির্দিষ্ট স্ক্রিপ্ট চালাবে
-        metadata:     # এই জবের মেটাডেটা, যেমন লেবেল যা Rollout কনফিগারেশনের prePromotionAnalysis-এর সাথে মিলবে
-          labels:     # এই লেবেলটি Rollout কনফিগারেশনের prePromotionAnalysis-এর সাথে মিলবে, যা এই AnalysisTemplate কে প্রোমোশনের আগে চালাবে
-            analysis: pre-promotion     # এই লেবেলটি Rollout কনফিগারেশনের prePromotionAnalysis-এর সাথে মিলবে, যা এই AnalysisTemplate কে প্রোমোশনের আগে চালাবে
-        spec:         # এই জবের স্পেসিফিকেশন, যা কন্টেইনার কনফিগারেশন এবং অন্যান্য সেটিংস নির্ধারণ করে
-          backoffLimit: 0     # এই সেটিংটি নিশ্চিত করে যে জবটি ব্যর্থ হলে পুনরায় চেষ্টা করা হবে না, যা ডেভেলপমেন্টের জন্য উপযুক্ত
-          template:     # এই জবের পড টেমপ্লেট, যা পড তৈরি করার জন্য ব্যবহার হবে
-            spec:       # এই পডের স্পেসিফিকেশন, যা কন্টেইনার কনফিগারেশন এবং অন্যান্য সেটিংস নির্ধারণ করে
-              containers:     # এই পডের কন্টেইনার কনফিগারেশন, যা অ্যাপ্লিকেশন রান করবে
-              - args:         # এই কন্টেইনারে চালানো হবে এমন কমান্ডের আর্গুমেন্ট, যা সফলতা হার পরীক্ষা করার জন্য একটি স্ক্রিপ্ট চালাবে
-                  - ./app-success-rate.sh     # এই আর্গুমেন্টটি কন্টেইনারে app-success-rate.sh স্ক্রিপ্ট চালাবে, যা সফলতা হার পরীক্ষা করবে এবং ফলাফল রিটার্ন করবে
-                command: ["/bin/bash", "-c"]  # এই কমান্ডটি নিশ্চিত করে যে কন্টেইনারটি একটি শেল কমান্ড চালাবে, যা আর্গুমেন্টে উল্লেখ করা স্ক্রিপ্টটি চালাবে
-                env:                          # এই কন্টেইনারে পরিবেশ ভেরিয়েবল সেট করা হচ্ছে, যা স্ক্রিপ্টকে প্রিভিউ সার্ভিসের URL জানাবে
-                  - name: service_url       # এই পরিবেশ ভেরিয়েবলটি স্ক্রিপ্টকে প্রিভিউ সার্ভিসের URL জানাবে, যা সফলতা হার পরীক্ষা করার জন্য প্রয়োজন হবে
-                    # value: "http://rollout-bluegreen-preview.default.svc.cluster.local:5000"    # এই ভেরিয়েবলটি স্ক্রিপ্টকে বলে দেবে যে প্রিভিউ সার্ভিসের URL http://rollout-bluegreen-preview.default.svc.cluster.local:5000, যা সফলতা হার পরীক্ষা করার জন্য প্রয়োজন হবে
-                    value: "http://rollout-bluegreen-preview.canary.svc.cluster.local:5000"
-                image: nuruzzaman24x/analysis:latest    # এই কন্টেইনার ইমেজটি ব্যবহার করে পড তৈরি হবে, যা স্ক্রিপ্ট রান করবে এবং সফলতা হার পরীক্ষা করবে
-                # image: 40.40.40.2:5000/analysis:latest    # এই কন্টেইনার ইমেজটি ব্যবহার করে পড তৈরি হবে, যা স্ক্রিপ্ট রান করবে এবং সফলতা হার পরীক্ষা করবে
-                imagePullPolicy: Always     # এই সেটিংটি নিশ্চিত করে যে সর্বদা নতুন ইমেজ টেনে আনা হবে, যা ডেভেলপমেন্টের জন্য উপযুক্ত
-                name: success-rate      # এই কন্টেইনারের নাম, যা পডের মধ্যে ইউনিক হবে
-              restartPolicy: Never      # এই সেটিংটি নিশ্চিত করে যে পডটি ব্যর্থ হলে পুনরায় চেষ্টা করা হবে না, যা ডেভেলপমেন্টের জন্য উপযুক্ত
-
-
----
+### without prePromotion analysis we will run this yaml file ##########
 apiVersion: argoproj.io/v1alpha1        #Argo Rollouts এর জন্য API ভার্সন
 kind: Rollout                           #এটি একটি Rollout কনফিগারেশন, যা Blue-Green deployment পরিচালনা করবে
 metadata:
-  name: blue-green-deployment         #Rollout-এর নাম সেট করে, যা kubectl get rollout দিয়ে খুঁজতে পারবে
-spec:                                 #Rollout-এর মূল কনফিগারেশন
-  replicas: 4                         #একই সময়ে ৪টি পড তৈরি করবে
-  selector:                           #এই লেবেলের সাথে মিলিয়ে পড নির্বাচন করবে
+  name: blue-green-deployment   #Rollout-এর নাম সেট করে, যা kubectl get rollout দিয়ে খুঁজতে পারবে
+spec:                                           #Rollout-এর মূল কনফিগারেশন
+  replicas: 4                           #একই সময়ে ৪টি পড তৈরি করবে
+  selector:                                     #এই লেবেলের সাথে মিলিয়ে পড নির্বাচন করবে
     matchLabels:
       app: blue-green-deployment
-  strategy:          #  ডিপ্লয়মেন্ট স্ট্র্যাটেজি হিসেবে Blue-Green ব্যবহার করা হচ্ছে
-    blueGreen:        #Blue-Green স্ট্র্যাটেজির কনফিগারেশন
-      activeService: rollout-bluegreen-active  #একটি সার্ভিস যা বর্তমানে সক্রিয় পডগুলোর ট্র্যাফিক হ্যান্ডেল করবে
-      previewService: rollout-bluegreen-preview #একটি সার্ভিস যা নতুন ভার্সনের পডগুলোর ট্র্যাফিক হ্যান্ডেল করবে, প্রোমোশনের আগে পরীক্ষা করার জন্য
-      autoPromotionEnabled: true    #প্রোমোশন স্বয়ংক্রিয়ভাবে enabled করা হয়েছে, যা পরীক্ষার সফল হলে নতুন ভার্সনকে সক্রিয় করবে
-      prePromotionAnalysis:   #প্রোমোশনের আগে একটি বিশ্লেষণ চালানো হবে, যা সফলতা হার পরীক্ষা করবে
-        templates:          #এই বিশ্লেষণের জন্য ব্যবহার করা হবে এমন টেমপ্লেটের তালিকা
-        - templateName: success-rate   #এই টেমপ্লেটটি ব্যবহার করে প্রোমোশনের আগে সফলতা হার পরীক্ষা করা হবে, যা নির্ধারণ করবে নতুন ভার্সনকে সক্রিয় করা হবে কিনা
-  template:       #Pod টেমপ্লেট যা পড তৈরি করার জন্য ব্যবহার হবে
-    metadata:     #Pod-এর মেটাডেটা, যেমন লেবেল যা সার্ভিসের সাথে মিলবে
-      labels:     #Pod-এর লেবেল যা selector-এর সাথে মিলবে
-        app: blue-green-deployment    #এই লেবেলটি সার্ভিসের selector-এর সাথে মিলবে, যা সার্ভিসকে পডের সাথে যুক্ত করবে
-    spec:       #Pod-এর স্পেসিফিকেশন, যা কন্টেইনার কনফিগারেশন এবং অন্যান্য সেটিংস নির্ধারণ করে
-      containers:   #Pod-এর কন্টেইনার কনফিগারেশন, যা অ্যাপ্লিকেশন রান করবে
-      - env:        # কন্টেইনারে পরিবেশ ভেরিয়েবল সেট করা হচ্ছে, যা অ্যাপ্লিকেশনকে প্রিভিউ সার্ভিসের URL জানাবে
-        - name: html_name     #এই পরিবেশ ভেরিয়েবলটি অ্যাপ্লিকেশনকে কোন HTML ফাইল সার্ভ করবে তা নির্ধারণ করবে
-          value: "app-v1.html"    #এই ভেরিয়েবলটি অ্যাপ্লিকেশনকে বলে দেবে যে এটি app-v1.html ফাইল সার্ভ করবে, যা প্রিভিউ সার্ভিসে পরীক্ষা করা হবে
-          # value: "app-v2.html"
-          # value: "app-v3.html"
-        image: nuruzzaman24x/blue-green:latest    #এই কন্টেইনার ইমেজটি ব্যবহার করে পড তৈরি হবে, যা অ্যাপ্লিকেশন রান করবে
+  strategy:                                     #Deployment স্ট্রাটেজি
+    blueGreen:                          #Blue-Green strategy ব্যবহার হচ্ছে
+      activeService: rollout-bluegreen-active           #প্রোডাকশনে যে সার্ভিস রান করবে সেটি
+      previewService: rollout-bluegreen-preview #প্রিভিউর জন্য তৈরি সার্ভিস
+      autoPromotionEnabled: true                                #নতুন ভার্সন যদি সফল হয় তাহলে অটো-প্রোমোট করবে
+  template:
+    metadata:
+      labels:
+        app: blue-green-deployment                              #Pod-এর লেবেল যা selector-এর সাথে মিলবে
+    spec:
+      containers:
+      - env:
+        - name: html_name
+          value: "app-v1.html"
+        image: nuruzzaman24x/blue-green:latest
         #image: 40.40.40.2:5000/blue-green:latest
-        imagePullPolicy: Always                 #এই সেটিংটি নিশ্চিত করে যে সর্বদা নতুন ইমেজ টেনে আনা হবে, যা ডেভেলপমেন্টের জন্য উপযুক্ত
-        name: blue-green        #কন্টেইনারের নাম, যা পডের মধ্যে ইউনিক হবে
-        ports:            #এই কন্টেইনার কোন পোর্টে অ্যাপ্লিকেশন সার্ভ করবে তা নির্ধারণ করে
-        - containerPort: 5000   #এই পোর্টে অ্যাপ্লিকেশন সার্ভ হবে, যা সার্ভিসের targetPort এর সাথে মিলবে
+        imagePullPolicy: IfNotPresent
+        name: blue-green
+        ports:
+        - containerPort: 5000
 ---
-apiVersion: v1    #
+apiVersion: v1
 kind: Service
 metadata:
   name: rollout-bluegreen-active
@@ -90,3 +54,98 @@ spec:
     targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে।
   selector:
     app: blue-green-deployment
+
+
+
+# apiVersion: argoproj.io/v1alpha1    # Argo Rollouts এর AnalysisTemplate API ভার্সন
+# kind: AnalysisTemplate      # এটি একটি AnalysisTemplate কনফিগারেশন, যা প্রোমোশনের আগে সফলতা হার পরীক্ষা করার জন্য ব্যবহৃত হবে
+# metadata:            # AnalysisTemplate-এর মেটাডেটা, যেমন নাম যা kubectl get analysistemplate দিয়ে খুঁজতে পারবে
+#   name: success-rate    # AnalysisTemplate-এর নাম সেট করে, যা Rollout কনফিগারেশনে উল্লেখ করা হবে
+# spec:     # AnalysisTemplate-এর স্পেসিফিকেশন, যা বিশ্লেষণের জন্য মেট্রিক্স এবং অন্যান্য সেটিংস নির্ধারণ করে
+#   metrics:      # এই AnalysisTemplate-এর মেট্রিক্সের তালিকা, যা সফলতা হার পরীক্ষা করার জন্য ব্যবহার হবে
+#   - name: success-rate    # এই মেট্রিক্সের নাম, যা Rollout কনফিগারেশনে উল্লেখ করা হবে
+#     provider:             # এই মেট্রিক্সের জন্য ব্যবহার করা হবে এমন প্রোভাইডার, যা কিভাবে মেট্রিক্স সংগ্রহ করবে তা নির্ধারণ করে
+#       job:      # এই মেট্রিক্সের জন্য একটি জব প্রোভাইডার ব্যবহার করা হচ্ছে, যা একটি পড তৈরি করবে এবং নির্দিষ্ট স্ক্রিপ্ট চালাবে
+#         metadata:     # এই জবের মেটাডেটা, যেমন লেবেল যা Rollout কনফিগারেশনের prePromotionAnalysis-এর সাথে মিলবে
+#           labels:     # এই লেবেলটি Rollout কনফিগারেশনের prePromotionAnalysis-এর সাথে মিলবে, যা এই AnalysisTemplate কে প্রোমোশনের আগে চালাবে
+#             analysis: pre-promotion     # এই লেবেলটি Rollout কনফিগারেশনের prePromotionAnalysis-এর সাথে মিলবে, যা এই AnalysisTemplate কে প্রোমোশনের আগে চালাবে
+#         spec:         # এই জবের স্পেসিফিকেশন, যা কন্টেইনার কনফিগারেশন এবং অন্যান্য সেটিংস নির্ধারণ করে
+#           backoffLimit: 0     # এই সেটিংটি নিশ্চিত করে যে জবটি ব্যর্থ হলে পুনরায় চেষ্টা করা হবে না, যা ডেভেলপমেন্টের জন্য উপযুক্ত
+#           template:     # এই জবের পড টেমপ্লেট, যা পড তৈরি করার জন্য ব্যবহার হবে
+#             spec:       # এই পডের স্পেসিফিকেশন, যা কন্টেইনার কনফিগারেশন এবং অন্যান্য সেটিংস নির্ধারণ করে
+#               containers:     # এই পডের কন্টেইনার কনফিগারেশন, যা অ্যাপ্লিকেশন রান করবে
+#               - args:         # এই কন্টেইনারে চালানো হবে এমন কমান্ডের আর্গুমেন্ট, যা সফলতা হার পরীক্ষা করার জন্য একটি স্ক্রিপ্ট চালাবে
+#                   - ./app-success-rate.sh     # এই আর্গুমেন্টটি কন্টেইনারে app-success-rate.sh স্ক্রিপ্ট চালাবে, যা সফলতা হার পরীক্ষা করবে এবং ফলাফল রিটার্ন করবে
+#                 command: ["/bin/bash", "-c"]  # এই কমান্ডটি নিশ্চিত করে যে কন্টেইনারটি একটি শেল কমান্ড চালাবে, যা আর্গুমেন্টে উল্লেখ করা স্ক্রিপ্টটি চালাবে
+#                 env:                          # এই কন্টেইনারে পরিবেশ ভেরিয়েবল সেট করা হচ্ছে, যা স্ক্রিপ্টকে প্রিভিউ সার্ভিসের URL জানাবে
+#                   - name: service_url       # এই পরিবেশ ভেরিয়েবলটি স্ক্রিপ্টকে প্রিভিউ সার্ভিসের URL জানাবে, যা সফলতা হার পরীক্ষা করার জন্য প্রয়োজন হবে
+#                     # value: "http://rollout-bluegreen-preview.default.svc.cluster.local:5000"    # এই ভেরিয়েবলটি স্ক্রিপ্টকে বলে দেবে যে প্রিভিউ সার্ভিসের URL http://rollout-bluegreen-preview.default.svc.cluster.local:5000, যা সফলতা হার পরীক্ষা করার জন্য প্রয়োজন হবে
+#                     value: "http://rollout-bluegreen-preview.canary.svc.cluster.local:5000"
+#                 image: nuruzzaman24x/analysis:latest    # এই কন্টেইনার ইমেজটি ব্যবহার করে পড তৈরি হবে, যা স্ক্রিপ্ট রান করবে এবং সফলতা হার পরীক্ষা করবে
+#                 # image: 40.40.40.2:5000/analysis:latest    # এই কন্টেইনার ইমেজটি ব্যবহার করে পড তৈরি হবে, যা স্ক্রিপ্ট রান করবে এবং সফলতা হার পরীক্ষা করবে
+#                 imagePullPolicy: Always     # এই সেটিংটি নিশ্চিত করে যে সর্বদা নতুন ইমেজ টেনে আনা হবে, যা ডেভেলপমেন্টের জন্য উপযুক্ত
+#                 name: success-rate      # এই কন্টেইনারের নাম, যা পডের মধ্যে ইউনিক হবে
+#               restartPolicy: Never      # এই সেটিংটি নিশ্চিত করে যে পডটি ব্যর্থ হলে পুনরায় চেষ্টা করা হবে না, যা ডেভেলপমেন্টের জন্য উপযুক্ত
+
+
+# ---
+# apiVersion: argoproj.io/v1alpha1        #Argo Rollouts এর জন্য API ভার্সন
+# kind: Rollout                           #এটি একটি Rollout কনফিগারেশন, যা Blue-Green deployment পরিচালনা করবে
+# metadata:
+#   name: blue-green-deployment         #Rollout-এর নাম সেট করে, যা kubectl get rollout দিয়ে খুঁজতে পারবে
+# spec:                                 #Rollout-এর মূল কনফিগারেশন
+#   replicas: 4                         #একই সময়ে ৪টি পড তৈরি করবে
+#   selector:                           #এই লেবেলের সাথে মিলিয়ে পড নির্বাচন করবে
+#     matchLabels:
+#       app: blue-green-deployment
+#   strategy:          #  ডিপ্লয়মেন্ট স্ট্র্যাটেজি হিসেবে Blue-Green ব্যবহার করা হচ্ছে
+#     blueGreen:        #Blue-Green স্ট্র্যাটেজির কনফিগারেশন
+#       activeService: rollout-bluegreen-active  #একটি সার্ভিস যা বর্তমানে সক্রিয় পডগুলোর ট্র্যাফিক হ্যান্ডেল করবে
+#       previewService: rollout-bluegreen-preview #একটি সার্ভিস যা নতুন ভার্সনের পডগুলোর ট্র্যাফিক হ্যান্ডেল করবে, প্রোমোশনের আগে পরীক্ষা করার জন্য
+#       autoPromotionEnabled: true    #প্রোমোশন স্বয়ংক্রিয়ভাবে enabled করা হয়েছে, যা পরীক্ষার সফল হলে নতুন ভার্সনকে সক্রিয় করবে
+#       prePromotionAnalysis:   #প্রোমোশনের আগে একটি বিশ্লেষণ চালানো হবে, যা সফলতা হার পরীক্ষা করবে
+#         templates:          #এই বিশ্লেষণের জন্য ব্যবহার করা হবে এমন টেমপ্লেটের তালিকা
+#         - templateName: success-rate   #এই টেমপ্লেটটি ব্যবহার করে প্রোমোশনের আগে সফলতা হার পরীক্ষা করা হবে, যা নির্ধারণ করবে নতুন ভার্সনকে সক্রিয় করা হবে কিনা
+#   template:       #Pod টেমপ্লেট যা পড তৈরি করার জন্য ব্যবহার হবে
+#     metadata:     #Pod-এর মেটাডেটা, যেমন লেবেল যা সার্ভিসের সাথে মিলবে
+#       labels:     #Pod-এর লেবেল যা selector-এর সাথে মিলবে
+#         app: blue-green-deployment    #এই লেবেলটি সার্ভিসের selector-এর সাথে মিলবে, যা সার্ভিসকে পডের সাথে যুক্ত করবে
+#     spec:       #Pod-এর স্পেসিফিকেশন, যা কন্টেইনার কনফিগারেশন এবং অন্যান্য সেটিংস নির্ধারণ করে
+#       containers:   #Pod-এর কন্টেইনার কনফিগারেশন, যা অ্যাপ্লিকেশন রান করবে
+#       - env:        # কন্টেইনারে পরিবেশ ভেরিয়েবল সেট করা হচ্ছে, যা অ্যাপ্লিকেশনকে প্রিভিউ সার্ভিসের URL জানাবে
+#         - name: html_name     #এই পরিবেশ ভেরিয়েবলটি অ্যাপ্লিকেশনকে কোন HTML ফাইল সার্ভ করবে তা নির্ধারণ করবে
+#           value: "app-v1.html"    #এই ভেরিয়েবলটি অ্যাপ্লিকেশনকে বলে দেবে যে এটি app-v1.html ফাইল সার্ভ করবে, যা প্রিভিউ সার্ভিসে পরীক্ষা করা হবে
+#           # value: "app-v2.html"
+#           # value: "app-v3.html"
+#         image: nuruzzaman24x/blue-green:latest    #এই কন্টেইনার ইমেজটি ব্যবহার করে পড তৈরি হবে, যা অ্যাপ্লিকেশন রান করবে
+#         #image: 40.40.40.2:5000/blue-green:latest
+#         imagePullPolicy: Always                 #এই সেটিংটি নিশ্চিত করে যে সর্বদা নতুন ইমেজ টেনে আনা হবে, যা ডেভেলপমেন্টের জন্য উপযুক্ত
+#         name: blue-green        #কন্টেইনারের নাম, যা পডের মধ্যে ইউনিক হবে
+#         ports:            #এই কন্টেইনার কোন পোর্টে অ্যাপ্লিকেশন সার্ভ করবে তা নির্ধারণ করে
+#         - containerPort: 5000   #এই পোর্টে অ্যাপ্লিকেশন সার্ভ হবে, যা সার্ভিসের targetPort এর সাথে মিলবে
+# ---
+# apiVersion: v1    #
+# kind: Service
+# metadata:
+#   name: rollout-bluegreen-active
+# spec:
+#   ports:
+#   - port: 5000    # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
+#     protocol: TCP
+#     targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে।
+#   selector:
+#     app: blue-green-deployment
+
+
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: rollout-bluegreen-preview
+# spec:
+#   ports:
+#   - port: 5000    # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
+#     protocol: TCP
+#     targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে।
+#   selector:
+#     app: blue-green-deployment
