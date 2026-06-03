@@ -6,7 +6,7 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx		# Ingress Controller হিসেবে nginx ব্যবহার করা হচ্ছে
-  rules:	#ক্লাস্টারে nginx-ingress-controller চালু thakte hobe,kubectl get pods -n ingress-nginx #
+  rules:	#ক্লাস্টারে nginx-ingress-controller চালু thakte hobe,kubectl get pods -n ingress-nginx
   - host: blue-green.demo  # ডোমেইন blue-green.demo-তে যখন কোনো রিকোয়েস্ট আসবে, তখন এটি নির্দিষ্ট সার্ভিসে পাঠাবে।
     http:				# ডোমেইন রেজিস্টার করা না থাকলে /etc/hosts ফাইল আপডেট করুন
       paths:

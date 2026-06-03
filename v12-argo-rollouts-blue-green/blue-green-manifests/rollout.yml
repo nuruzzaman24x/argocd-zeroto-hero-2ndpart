@@ -10,27 +10,27 @@ spec:
   strategy:
     blueGreen:
       activeService: rollout-bluegreen-active		# Active (লাইভ) ভার্সনের সার্ভিস, যেখানে ট্র্যাফিক পাঠানো হবে।
-      autoPromotionEnabled: false				# নতুন ভার্সন অটোমেটিক লাইভ হবে না।, manually korte hobe
+      # autoPromotionEnabled: false				# নতুন ভার্সন অটোমেটিক লাইভ হবে না।, manually korte hobe
       previewService: rollout-bluegreen-preview	#নতুন ভার্সনের সার্ভিস, যা পরীক্ষার জন্য ব্যবহার হবে কিন্তু ইউজার ট্র্যাফিক এখানে আসবে না।
-      # abortScaleDownDelaySeconds: 10		# ডিপ্লয়মেন্ট ব্যর্থ হলে 10 সেকেন্ড অপেক্ষা করে rollback করবে
-      # scaleDownDelaySeconds: 60			# পুরানো ভার্সনের Pod-গুলি ডিলিট হওয়ার আগে 60 সেকেন্ড অপেক্ষা করবে।
-      # previewReplicaCount: 2		# নতুন ভার্সনের সার্ভিস/ Preview সার্ভিসে 2টি Pod চলবে।
-      # autoPromotionSeconds: 20	# ২০ সেকেন্ড পরে নতুন ভার্সন অটো প্রোমোট হবে (যদি autoPromotionEnabled: true দেওয়া হয়)।
-  template:
-    metadata:
-      labels:
+      abortScaleDownDelaySeconds: 5		# ডিপ্লয়মেন্ট ব্যর্থ হলে 10 সেকেন্ড অপেক্ষা করে rollback করবে
+      scaleDownDelaySeconds: 10			# পুরানো ভার্সনের Pod-গুলি ডিলিট হওয়ার আগে 60 সেকেন্ড অপেক্ষা করবে।
+      previewReplicaCount: 2		# নতুন ভার্সনের সার্ভিস/ Preview সার্ভিসে 2টি Pod চলবে।
+      autoPromotionSeconds: 20	# ২০ সেকেন্ড পরে নতুন ভার্সন অটো প্রোমোট হবে (যদি autoPromotionEnabled: true দেওয়া হয়)।
+  template:		#এখানে template মানে হলো — Pod কেমন হবে তার blueprint / design।
+    metadata:	#সহজভাবে:  Rollout বা Deployment নতুন Pod তৈরি করার সময় এই template follow করে।
+      labels:	#অর্থাৎ Pod-এর image কী হবে, label কী হবে, port কী হবে — সব এখানে define করা হয়।
         app: blue-green-deployment		# এই Pod-গুলির লেবেল হবে app: blue-green-deployment।
     spec:
       containers:
       - env:
-        - name: html_name
+        - name: html_name	#এটা হলো একটি Environment Variable। সহজ ভাষায়  এটা container-এর ভিতরে একটা variable তৈরি করে: html_name=app-v1.html
           value: "app-v1.html"		#app-v1.html  app-v2.html
           # value: "app-v2.html"		#app-v1.html  app-v2.html
         image: nuruzzaman24x/blue-green:latest
         imagePullPolicy: IfNotPresent # IfNotPresent, Never, Always #
         name: blue-green
         ports:
-        - containerPort: 5000 	# এই কন্টেইনারের ভেতরে অ্যাপ্লিকেশন 6000 পোর্টে রান হবে।
+        - containerPort: 5000 	# এই কন্টেইনারের ভেতরে অ্যাপ্লিকেশন 5000 পোর্টে রান হবে।
 
 
 ---
@@ -40,12 +40,12 @@ metadata:
   name: rollout-bluegreen-active  #এটি সার্ভিসের নাম, যা Blue-Green Deployment-এর Active Version পরিচালনা করবে।
 spec:
   ports:
-  - port: 5000    # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
+  - port: 5000   # এই সার্ভিসটি 6000 পোর্টে এক্সপোজ হবে (Cluster IP)।
     protocol: TCP
-    targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে।
+    targetPort: 5000 # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে।
   selector:
     app: blue-green-deployment  # এই সার্ভিসটি শুধুমাত্র blue-green-deployment লেবেলযুক্ত Pods-এর জন্য কাজ করবে
-  type: ClusterIP
+  type: ClusterIP		#Ingress already external traffic handle করছে, এই Service শুধু Kubernetes cluster এর ভিতরে accessible হবে।
 
 
 ---
@@ -55,9 +55,9 @@ metadata:
   name: rollout-bluegreen-preview 
 spec:
   ports:
-  - port: 5000    # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
+  - port: 5000   # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
     protocol: TCP
-    targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 6000 পোর্টে কাজ করবে।
+    targetPort: 5000 # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 6000 পোর্টে কাজ করবে।
   selector:
     app: blue-green-deployment  # এই সার্ভিসটি শুধুমাত্র blue-green-deployment লেবেলযুক্ত Pods-এর জন্য কাজ করবে
-  type: ClusterIP
+  type: ClusterIP		#Ingress already external traffic handle করছে, এই Service শুধু Kubernetes cluster এর ভিতরে accessible হবে।

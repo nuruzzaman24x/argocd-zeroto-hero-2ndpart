@@ -1,59 +1,59 @@
 ### without prePromotion analysis we will run this yaml file ##########
-apiVersion: argoproj.io/v1alpha1        #Argo Rollouts এর জন্য API ভার্সন
-kind: Rollout                           #এটি একটি Rollout কনফিগারেশন, যা Blue-Green deployment পরিচালনা করবে
-metadata:
+apiVersion: argoproj.io/v1alpha1    #Argo Rollouts এর জন্য API ভার্সন
+kind: Rollout   #এটি একটি Rollout কনফিগারেশন, যা Blue-Green deployment পরিচালনা করবে
+metadata:       #Rollout-এর মেটাডেটা, যেমন নাম যা kubectl get rollout দিয়ে খুঁজতে পারবে
   name: blue-green-deployment   #Rollout-এর নাম সেট করে, যা kubectl get rollout দিয়ে খুঁজতে পারবে
-spec:                                           #Rollout-এর মূল কনফিগারেশন
-  replicas: 4                           #একই সময়ে ৪টি পড তৈরি করবে
-  selector:                                     #এই লেবেলের সাথে মিলিয়ে পড নির্বাচন করবে
-    matchLabels:
-      app: blue-green-deployment
-  strategy:                                     #Deployment স্ট্রাটেজি
-    blueGreen:                          #Blue-Green strategy ব্যবহার হচ্ছে
-      activeService: rollout-bluegreen-active           #প্রোডাকশনে যে সার্ভিস রান করবে সেটি
-      previewService: rollout-bluegreen-preview #প্রিভিউর জন্য তৈরি সার্ভিস
-      autoPromotionEnabled: true                                #নতুন ভার্সন যদি সফল হয় তাহলে অটো-প্রোমোট করবে
-  template:
-    metadata:
-      labels:
-        app: blue-green-deployment                              #Pod-এর লেবেল যা selector-এর সাথে মিলবে
-    spec:
-      containers:
-      - env:
-        - name: html_name
-          value: "app-v1.html"
-        image: nuruzzaman24x/blue-green:latest
-        #image: 40.40.40.2:5000/blue-green:latest
-        imagePullPolicy: IfNotPresent
-        name: blue-green
-        ports:
-        - containerPort: 5000
+spec:   #Rollout-এর মূল কনফিগারেশন
+  replicas: 4   #একই সময়ে ৪টি পড তৈরি করবে
+  selector:     #এই লেবেলের সাথে মিলিয়ে পড নির্বাচন করবে
+    matchLabels:    #এই লেবেলটি সার্ভিসের selector-এর সাথে মিলবে, যা সার্ভিসকে পডের সাথে যুক্ত করবে
+      app: blue-green-deployment    #এই লেবেলটি সার্ভিসের selector-এর সাথে মিলবে, যা সার্ভিসকে পডের সাথে যুক্ত করবে
+  strategy:     # ডিপ্লয়মেন্ট স্ট্র্যাটেজি হিসেবে Blue-Green ব্যবহার করা হচ্ছে
+    blueGreen:    #Blue-Green স্ট্র্যাটেজির কনফিগারেশন
+      activeService: rollout-bluegreen-active     #একটি সার্ভিস যা বর্তমানে সক্রিয় পডগুলোর ট্র্যাফিক হ্যান্ডেল করবে
+      previewService: rollout-bluegreen-preview   #একটি সার্ভিস যা নতুন ভার্সনের পডগুলোর ট্র্যাফিক হ্যান্ডেল করবে, প্রোমোশনের আগে পরীক্ষা করার জন্য
+      autoPromotionEnabled: true    #প্রোমোশন স্বয়ংক্রিয়ভাবে enabled করা হয়েছে, যা পরীক্ষার সফল হলে নতুন ভার্সনকে সক্রিয় করবে
+  template:   #Pod টেমপ্লেট যা পড তৈরি করার জন্য ব্যবহার হবে
+    metadata:   #Pod-এর মেটাডেটা, যেমন লেবেল যা সার্ভিসের সাথে মিলবে
+      labels:   #Pod-এর লেবেল যা selector-এর সাথে মিলবে
+        app: blue-green-deployment      #এই লেবেলটি সার্ভিসের selector-এর সাথে মিলবে, যা সার্ভিসকে পডের সাথে যুক্ত করবে
+    spec:     #Pod-এর স্পেসিফিকেশন, যা কন্টেইনার কনফিগারেশন এবং অন্যান্য সেটিংস নির্ধারণ করে
+      containers:   #Pod-এর কন্টেইনার কনফিগারেশন, যা অ্যাপ্লিকেশন রান করবে
+      - env:      # কন্টেইনারে env ভেরিয়েবল সেট করা হচ্ছে, যা অ্যাপ্লিকেশনকে প্রিভিউ সার্ভিসের URL জানাবে  
+        - name: html_name     #এই পরিবেশ ভেরিয়েবলটি অ্যাপ্লিকেশনকে কোন HTML ফাইল সার্ভ করবে তা নির্ধারণ করবে
+          value: "app-v1.html"    #এই ভেরিয়েবলটি অ্যাপ্লিকেশনকে বলে দেবে যে এটি app-v1.html ফাইল সার্ভ করবে, যা প্রিভিউ সার্ভিসে পরীক্ষা করা হবে
+        image: nuruzzaman24x/blue-green:latest    #এই কন্টেইনার ইমেজটি ব্যবহার করে পড তৈরি হবে, যা অ্যাপ্লিকেশন রান করবে
+        #image: 40.40.40.2:5000/blue-green:latest   #এই কন্টেইনার ইমেজটি ব্যবহার করে পড তৈরি হবে, যা অ্যাপ্লিকেশন রান করবে
+        imagePullPolicy: IfNotPresent   
+        name: blue-green      #কন্টেইনারের নাম, যা পডের মধ্যে ইউনিক হবে
+        ports:          #এই কন্টেইনার কোন পোর্টে অ্যাপ্লিকেশন সার্ভ করবে তা নির্ধারণ করে
+        - containerPort: 5000   #এই পোর্টে অ্যাপ্লিকেশন সার্ভ হবে, যা সার্ভিসের targetPort এর সাথে মিলবে
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: rollout-bluegreen-active
-spec:
-  ports:
+apiVersion: v1    # Kubernetes API ভার্সন
+kind: Service     # এটি একটি সার্ভিস কনফিগারেশন, যা পডগুলোর জন্য একটি স্থির IP ঠিকানা এবং DNS নাম প্রদান করবে
+metadata:         # সার্ভিসের মেটাডেটা, যেমন নাম যা kubectl get service দিয়ে খুঁজতে পারবে
+  name: rollout-bluegreen-active    # এই সার্ভিসের নাম সেট করে, যা kubectl get service দিয়ে খুঁজতে পারবে
+spec:         # সার্ভিসের স্পেসিফিকেশন, যা সার্ভিসের ধরন, পোর্ট এবং সিলেক্টর নির্ধারণ করে
+  ports:      # সার্ভিসের পোর্ট কনফিগারেশন, যা সার্ভিস কোন পোর্টে এক্সপোজ হবে এবং পডের কোন পোর্টে ট্র্যাফিক পাঠাবে তা নির্ধারণ করে
   - port: 5000    # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
-    protocol: TCP
-    targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে।
-  selector:
-    app: blue-green-deployment
+    protocol: TCP   # এই সার্ভিসটি TCP প্রোটোকল ব্যবহার করবে, যা সাধারণত HTTP ট্র্যাফিকের জন্য ব্যবহৃত হয়
+    targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে, যা সার্ভিসের targetPort এর সাথে মিলবে
+  selector:           # সার্ভিসের সিলেক্টর, যা লেবেল ব্যবহার করে পড নির্বাচন করবে, যা এই সার্ভিসের ট্র্যাফিক হ্যান্ডেল করবে
+    app: blue-green-deployment    # এই লেবেলটি সার্ভিসের selector-এর সাথে মিলবে, যা সার্ভিসকে পডের সাথে যুক্ত করবে
 
 
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: rollout-bluegreen-preview
-spec:
-  ports:
+apiVersion: v1      # Kubernetes API ভার্সন
+kind: Service       # এটি একটি সার্ভিস কনফিগারেশন, যা পডগুলোর জন্য একটি স্থির IP ঠিকানা এবং DNS নাম প্রদান করবে
+metadata:           # সার্ভিসের মেটাডেটা, যেমন নাম যা kubectl get service দিয়ে খুঁজতে পারবে
+  name: rollout-bluegreen-preview     # এই সার্ভিসের নাম সেট করে, যা kubectl get service দিয়ে খুঁজতে পারবে
+spec:     # সার্ভিসের স্পেসিফিকেশন, যা সার্ভিসের ধরন, পোর্ট এবং সিলেক্টর নির্ধারণ করে
+  ports:    # সার্ভিসের পোর্ট কনফিগারেশন, যা সার্ভিস কোন পোর্টে এক্সপোজ হবে এবং পডের কোন পোর্টে ট্র্যাফিক পাঠাবে তা নির্ধারণ করে
   - port: 5000    # এই সার্ভিসটি 5000 পোর্টে এক্সপোজ হবে (Cluster IP)।
-    protocol: TCP
-    targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে।
-  selector:
-    app: blue-green-deployment
+    protocol: TCP   # এই সার্ভিসটি TCP প্রোটোকল ব্যবহার করবে, যা সাধারণত HTTP ট্র্যাফিকের জন্য ব্যবহৃত হয়
+    targetPort: 5000  # Pod-এর ভেতরে চলমান অ্যাপ্লিকেশনও 5000 পোর্টে কাজ করবে, যা সার্ভিসের targetPort এর সাথে মিলবে
+  selector:           # সার্ভিসের সিলেক্টর, যা লেবেল ব্যবহার করে পড নির্বাচন করবে, या एই सार्विस के ट्रैफिक हैंडल करेगा
+    app: blue-green-deployment    # এই লেবেলটি সার্ভিসের selector-এর সাথে মিলবে, যা সার্ভিসকে পডের সাথে যুক্ত করবে
 
 
 
@@ -88,6 +88,7 @@ spec:
 #               restartPolicy: Never      # এই সেটিংটি নিশ্চিত করে যে পডটি ব্যর্থ হলে পুনরায় চেষ্টা করা হবে না, যা ডেভেলপমেন্টের জন্য উপযুক্ত
 
 
+######### with prePromotion analysis we will run this yaml file ##########
 # ---
 # apiVersion: argoproj.io/v1alpha1        #Argo Rollouts এর জন্য API ভার্সন
 # kind: Rollout                           #এটি একটি Rollout কনফিগারেশন, যা Blue-Green deployment পরিচালনা করবে
