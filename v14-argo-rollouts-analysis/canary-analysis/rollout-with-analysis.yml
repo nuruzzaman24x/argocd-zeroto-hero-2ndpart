@@ -37,8 +37,8 @@ spec:
     spec:
       containers:
       - name: rollouts-setweight
-        image: canary # This is the same image that we built in blue-green session , I just re-tagged it
-        imagePullPolicy: Never
+        image: nuruzzaman24x/canary # This is the same image that we built in blue-green session , I just re-tagged it
+        imagePullPolicy: Always
         env:
         - name: html_name
           value: "app-v1.html"
