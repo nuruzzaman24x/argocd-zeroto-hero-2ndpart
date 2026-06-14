@@ -1,23 +1,98 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Workflow
-metadata:
+# # এই YAML আসলে কী?  এটা বলছে: আমি একটা workflow চালাবো, যার মধ্যে ৪টা কাজ (A, B, C, D) আছে, এবং তারা একে অপরের উপর depend করে।
+# apiVersion: argoproj.io/v1alpha1  #এটা Kubernetes-এর নিয়ম। তুমি যখন Kubernetes-এ কোনো resource তৈরি করো, তাকে বলতে হয় এটা কোন API version ব্যবহার করছে। এখানে বলছে: "আমি Argo Workflows-এর v1alpha1 API version ব্যবহার করছি।"
+# kind: Workflow      #এটা কোন ধরনের resource — এখানে বলছে এটা একটা Workflow (Argo-র নিজস্ব resource type)।
+# metadata:     #metadata মানে এই resource-এর পরিচয়পত্র। generateName দিয়ে বলছে — নাম manually দেওয়া হবে না, Argo নিজেই random suffix জুড়ে একটা নাম বানাবে। যেমন: argo-wf-x4k9z, argo-wf-m2p1q
+#   generateName: argo-wf-  # Name of this Workflow
+# spec:
+#   serviceAccountName: argo    #Kubernetes-এ কোনো কাজ করতে হলে permission লাগে। serviceAccountName: argo বলছে — এই workflow argo নামের service account-এর permission দিয়ে চলবে
+#   entrypoint: dag-template    # কোথা থেকে শুরু করবো?" — এই প্রশ্নের উত্তর। Argo-কে বলছে: শুরু করো dag-template থেকে
+#   templates:                  #এটা একটা list — এই workflow-এ কতগুলো blueprint আছে, সেগুলো এখানে define করা হবে।
+#   - name: dag-template        #dag-template হলো "মূল অর্কেস্ট্রেটর"। এটা নিজে কোনো কাজ করে না, বরং অন্য templates-কে ডেকে কাজ করায়। dag: মানে Directed Acyclic Graph — একটা নির্দিষ্ট ক্রমে tasks চালানোর পরিকল্পনা।
+#     dag:
+#       tasks:
+#         - name: A           #Task A চালাও। কীভাবে? container-template blueprint অনুযায়ী। কোনো dependencies নেই, তাই এটা সবার আগে শুরু হয়।
+#           template: container-template
+#         - name: B           #Task B চালাও script-template দিয়ে। কিন্তু শর্ত: A শেষ হওয়ার পরেই শুরু হবে।
+#           template: script-template
+#           dependencies: [A]
+#         - name: C           #Task C চালাও resource-template দিয়ে। C-ও A-এর উপর depend করে, কিন্তু B-এর উপর না — তাই B ও C একসাথে parallel-এ চলে।
+#           template: resource-template
+#           dependencies: [A]
+#         - name: D           #Task D সবার শেষে। শর্ত: B এবং C দুটোই শেষ হলে তবেই শুরু হবে।
+#           template: delay-template
+#           dependencies: [B, C]
+# # - name: steps-template # Defining the "steps template" as a Template Invocator, You must use one of "dag" or "steps" as a template invocator
+# #   steps:
+# #   - - name: step1
+# #       template: container-template
+# #   - - name: step2a
+# #       template: script-template
+# #     - name: step2b
+# #       template: resource-template
+# #   - - name: step3
+# #       template: delay-template
+
+
+#   - name: container-template # এটা একটা Docker container চালায়। image: alpine মানে Alpine Linux-এর ছোট্ট container। command হলো shell খোলো, আর args-এ বলা command চালাও — এখানে শুধু একটা সহজ message print করছে।
+#     container:
+#       image: alpine
+#       command: ["/bin/sh", "-c"]
+#       args: ["echo Hello from container template"]
+
+#   - name: script-template # এটা সরাসরি YAML-এর মধ্যে Python code লিখে চালায়। image: python:alpine3.6 মানে Python-সহ Alpine container। source: এর নিচে যা লেখা, সেটাই চলে — এখানে ১ থেকে ১০০-এর মধ্যে একটা random সংখ্যা print হয়।
+#     script:
+#       image: python:alpine3.6
+#       command: [python]
+#       source: |
+#         import random
+#         i = random.randint(1, 100)
+#         print(i)
+
+#   - name: resource-template # এটা Kubernetes-এ একটা নতুন resource তৈরি করে। action: create মানে "বানাও"। manifest: এর নিচে সেই resource-এর definition — একটা ConfigMap (key-value store), যার মধ্যে created_by: argo-workflows data থাকবে।
+#     resource:
+#       action: create
+#       manifest: |
+#         apiVersion: v1
+#         kind: ConfigMap
+#         metadata:
+#           generateName: argo-wf-resource-template-cm-
+#         data:
+#           created_by: argo-workflows
+  
+#   - name: delay-template # এটা সবচেয়ে সহজ — workflow-কে ২০ সেকেন্ড pause করে রাখো। suspend মানে থামো, কিছু করো না। Real life-এ এটা দিয়ে external approval বা rate limiting করা হয়।
+#     suspend:
+#       duration: "20s"
+
+
+
+
+
+
+
+
+
+# এই YAML আসলে কী?  এটা বলছে: আমি একটা workflow চালাবো, যার মধ্যে ৪টা কাজ (A, B, C, D) আছে, এবং তারা একে অপরের উপর depend করে।
+apiVersion: argoproj.io/v1alpha1  #এটা Kubernetes-এর নিয়ম। তুমি যখন Kubernetes-এ কোনো resource তৈরি করো, তাকে বলতে হয় এটা কোন API version ব্যবহার করছে। এখানে বলছে: "আমি Argo Workflows-এর v1alpha1 API version ব্যবহার করছি।"
+kind: Workflow      #এটা কোন ধরনের resource — এখানে বলছে এটা একটা Workflow (Argo-র নিজস্ব resource type)।
+metadata:     #metadata মানে এই resource-এর পরিচয়পত্র। generateName দিয়ে বলছে — নাম manually দেওয়া হবে না, Argo নিজেই random suffix জুড়ে একটা নাম বানাবে। যেমন: argo-wf-x4k9z, argo-wf-m2p1q
   generateName: argo-wf-  # Name of this Workflow
 spec:
-  entrypoint: dag-template # Defines "dag-template" as the "main" template
-  templates:
-  - name: dag-template # Defining the "dag template" as a Template Invocator, You must use one of "dag" or "steps" as a template invocator
+  serviceAccountName: argo    #Kubernetes-এ কোনো কাজ করতে হলে permission লাগে। serviceAccountName: argo বলছে — এই workflow argo নামের service account-এর permission দিয়ে চলবে
+  entrypoint: dag-template    # কোথা থেকে শুরু করবো?" — এই প্রশ্নের উত্তর। Argo-কে বলছে: শুরু করো dag-template থেকে
+  templates:                  #এটা একটা list — এই workflow-এ কতগুলো blueprint আছে, সেগুলো এখানে define করা হবে।
+  - name: dag-template        #dag-template হলো "মূল অর্কেস্ট্রেটর"। এটা নিজে কোনো কাজ করে না, বরং অন্য templates-কে ডেকে কাজ করায়। dag: মানে Directed Acyclic Graph — একটা নির্দিষ্ট ক্রমে tasks চালানোর পরিকল্পনা।
     dag:
       tasks:
-        - name: A
+        - name: A           #Task A চালাও। কীভাবে? container-template blueprint অনুযায়ী। কোনো dependencies নেই, তাই এটা সবার আগে শুরু হয়।
           template: container-template
-        - name: B
+        - name: B           #Task B চালাও script-template দিয়ে। কিন্তু শর্ত: A শেষ হওয়ার পরেই শুরু হবে।
           template: script-template
           dependencies: [A]
-        - name: C
+        - name: C           #Task C চালাও resource-template দিয়ে। C-ও A-এর উপর depend করে, কিন্তু B-এর উপর না — তাই B ও C একসাথে parallel-এ চলে।
           template: resource-template
           dependencies: [A]
-        - name: D
-          template: delay-template
+        - name: D           #Task D সবার শেষে। শর্ত: B এবং C দুটোই শেষ হলে তবেই শুরু হবে।
+          template: suspend-template
           dependencies: [B, C]
 # - name: steps-template # Defining the "steps template" as a Template Invocator, You must use one of "dag" or "steps" as a template invocator
 #   steps:
@@ -31,12 +106,13 @@ spec:
 #       template: delay-template
 
 
-  - name: container-template # Defining the "container template" as a Template Definition
+  - name: container-template # এটা একটা Docker container চালায়। image: alpine মানে Alpine Linux-এর ছোট্ট container। command হলো shell খোলো, আর args-এ বলা command চালাও — এখানে শুধু একটা সহজ message print করছে।
     container:
       image: alpine
       command: ["/bin/sh", "-c"]
       args: ["echo Hello from container template"]
-  - name: script-template # Defining the "script template" as a Template Definition
+
+  - name: script-template # এটা সরাসরি YAML-এর মধ্যে Python code লিখে চালায়। image: python:alpine3.6 মানে Python-সহ Alpine container। source: এর নিচে যা লেখা, সেটাই চলে — এখানে ১ থেকে ১০০-এর মধ্যে একটা random সংখ্যা print হয়।
     script:
       image: python:alpine3.6
       command: [python]
@@ -44,7 +120,8 @@ spec:
         import random
         i = random.randint(1, 100)
         print(i)
-  - name: resource-template # Defining the "resource template" as a Template Definition
+
+  - name: resource-template # এটা Kubernetes-এ একটা নতুন resource তৈরি করে। action: create মানে "বানাও"। manifest: এর নিচে সেই resource-এর definition — একটা ConfigMap (key-value store), যার মধ্যে created_by: argo-workflows data থাকবে।
     resource:
       action: create
       manifest: |
@@ -54,6 +131,7 @@ spec:
           generateName: argo-wf-resource-template-cm-
         data:
           created_by: argo-workflows
-  - name: delay-template # Defining the "delay template" as a Template Definition
+  
+  - name: suspend-template # এটা সবচেয়ে সহজ — workflow-কে ২০ সেকেন্ড pause করে রাখো। suspend মানে থামো, কিছু করো না। Real life-এ এটা দিয়ে external approval বা rate limiting করা হয়।
     suspend:
       duration: "20s"
