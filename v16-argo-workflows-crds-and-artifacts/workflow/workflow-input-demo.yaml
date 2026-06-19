@@ -1,0 +1,97 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: deploy-web-app-          # নতুন একটা ওয়েব অ্যাপ ডিপ্লয় করার production pipeline
+
+spec:
+  entrypoint: deploy-pipeline            # Workflow শুরু হবে "deploy-pipeline" থেকে
+
+  arguments:                             # Workflow-level (global) parameter
+    parameters:
+    - name: app-name
+      value: "my-web-app"                # পুরো pipeline জুড়ে এই নামটা ব্যবহার হবে
+
+  templates:
+
+  - name: deploy-pipeline                # DAG টেমপ্লেট - পুরো ডিপ্লয়মেন্ট ফ্লো এখানে সাজানো
+    dag:
+      tasks:
+
+        - name: build-and-test           # ধাপ ১: কোড build আর test করা
+          template: build-test-template  # ব্যবহার হচ্ছে CONTAINER TEMPLATE
+
+        - name: generate-version-tag           # ধাপ ২: নতুন একটা version tag বানানো
+          template: generate-tag-template      # ব্যবহার হচ্ছে SCRIPT TEMPLATE
+          dependencies: [build-and-test]        # build/test পাস না করলে tag বানানো হবে না
+
+        - name: deploy-to-k8s              # ধাপ ৩: Kubernetes এ আসল deployment apply করা
+          template: deploy-template        # ব্যবহার হচ্ছে RESOURCE TEMPLATE
+          dependencies: [generate-version-tag]
+          arguments:
+            parameters:
+            - name: image-tag
+              value: "{{tasks.generate-version-tag.outputs.result}}"  # আগের ধাপের output (tag) এখানে ব্যবহার হচ্ছে
+
+        - name: wait-before-go-live              # ধাপ ৪: পুরোপুরি live করার আগে কিছুক্ষণ বিরতি
+          template: approval-delay-template      # ব্যবহার হচ্ছে DELAY (SUSPEND) TEMPLATE
+          dependencies: [deploy-to-k8s]
+
+
+  # ১) CONTAINER TEMPLATE — আসল build+test কাজ, একটা রেডি Docker image দিয়ে
+  - name: build-test-template
+    inputs:
+      artifacts:
+      - name: code                                # "code" নামে একটা artifact ডিফাইন হচ্ছে
+        path: /app                                # এই path এ source code ডাউনলোড হয়ে বসবে
+        git:
+          repo: https://github.com/Digi-Con/digicon-app.git   # নিজের app এর আসল repo URL এখানে দিতে হবে https://github.com/Digi-Con/digicon-app.git
+          revision: "main"                         # কোন branch/commit থেকে কোড আনবে
+    container:
+      image: node:20-alpine                       # Node.js এর ছোট official image
+      workingDir: /app                             # artifact যে path এ আছে, সেখান থেকেই কমান্ড রান হবে
+      command: ["/bin/sh", "-c"]
+      args: ["npm install && npm test"]            # এখন আসল package.json পেয়ে যাবে, তাই কাজ করবে
+
+
+  # ২) SCRIPT TEMPLATE — ছোট ইনলাইন লজিক, আলাদা image বানানোর দরকার নেই
+  - name: generate-tag-template
+    script:
+      image: python:3.11-alpine
+      command: [python]
+      source: |
+        import datetime
+        tag = datetime.datetime.utcnow().strftime("v%Y%m%d-%H%M%S")  # সময়ের উপর ভিত্তি করে ইউনিক ট্যাগ
+        print(tag)                                                   # এই output-ই পরের স্টেপে ব্যবহার হবে
+
+
+  # ৩) RESOURCE TEMPLATE — সরাসরি Kubernetes resource তৈরি/আপডেট, কোনো container না চালিয়ে
+  - name: deploy-template
+    inputs:
+      parameters:
+      - name: image-tag                           # আগের স্টেপ থেকে আসা tag গ্রহণ করছে
+    resource:
+      action: apply                                # নতুন/বিদ্যমান Deployment apply হবে
+      manifest: |
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: my-web-app
+        spec:
+          replicas: 3
+          selector:
+            matchLabels:
+              app: my-web-app
+          template:
+            metadata:
+              labels:
+                app: my-web-app
+            spec:
+              containers:
+              - name: my-web-app
+                image: myregistry/my-web-app:{{inputs.parameters.image-tag}}   # নতুন version দিয়ে আপডেট হচ্ছে
+
+
+  # ৪) DELAY (SUSPEND) TEMPLATE — সম্পূর্ণ লাইভ হওয়ার আগে কিছুটা বিরতি (bake time / manual check)
+  - name: approval-delay-template
+    suspend:
+      duration: "5m"                                # ৫ মিনিট অপেক্ষা, এই সময়ে কেউ চেক করে নিতে পারে সব ঠিক আছে কিনা

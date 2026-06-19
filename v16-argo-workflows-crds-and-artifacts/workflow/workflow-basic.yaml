@@ -1,0 +1,121 @@
+# apiVersion: argoproj.io/v1alpha1
+# kind: Workflow
+# metadata:
+#   generateName: argo-wf-  # Name of this Workflow
+# spec:
+#   entrypoint: dag-template # Defines "dag-template" as the "main" template
+#   templates:
+#   - name: dag-template # Defining the "dag template" as a Template Invocator, You must use one of "dag" or "steps" as a template invocator
+#     dag:
+#       tasks:
+#         - name: A
+#           template: container-template
+#         - name: B
+#           template: script-template
+#           dependencies: [A]
+#         - name: C
+#           template: resource-template
+#           dependencies: [A]
+#         - name: D
+#           template: delay-template
+#           dependencies: [B, C]
+# # - name: steps-template # Defining the "steps template" as a Template Invocator, You must use one of "dag" or "steps" as a template invocator
+# #   steps:
+# #   - - name: step1
+# #       template: container-template
+# #   - - name: step2a
+# #       template: script-template
+# #     - name: step2b
+# #       template: resource-template
+# #   - - name: step3
+# #       template: delay-template
+
+
+#   - name: container-template # Defining the "container template" as a Template Definition
+#     container:
+#       image: alpine
+#       command: ["/bin/sh", "-c"]
+#       args: ["echo Hello from container template"]
+#   - name: script-template # Defining the "script template" as a Template Definition
+#     script:
+#       image: python:alpine3.6
+#       command: [python]
+#       source: |
+#         import random
+#         i = random.randint(1, 100)
+#         print(i)
+#   - name: resource-template # Defining the "resource template" as a Template Definition
+#     resource:
+#       action: create
+#       manifest: |
+#         apiVersion: v1
+#         kind: ConfigMap
+#         metadata:
+#           generateName: argo-wf-resource-template-cm-
+#         data:
+#           created_by: argo-workflows
+#   - name: delay-template # Defining the "delay template" as a Template Definition
+#     suspend:
+#       duration: "20s"
+
+
+
+
+
+apiVersion: argoproj.io/v1alpha1  # Argo Workflow এর API ভার্সন নির্ধারণ করা হচ্ছে
+kind: Workflow  # এই রিসোর্সটির টাইপ - এটি একটি Workflow
+metadata:  # মেটাডেটা সেকশন শুরু - নাম, লেবেল ইত্যাদি তথ্য এখানে থাকে
+  generateName: argo-wf-  # ওয়ার্কফ্লোর নামের প্রিফিক্স; Argo এর পরে র‍্যান্ডম স্ট্রিং জুড়ে দিয়ে আসল নাম বানাবে
+spec:  # Workflow এর মূল স্পেসিফিকেশন (কনফিগারেশন) শুরু হচ্ছে
+  entrypoint: dag-template  # Workflow চালু হবে কোন টেমপ্লেট থেকে - এখানে "dag-template" থেকে শুরু হবে
+  templates:  # সব টেমপ্লেটের লিস্ট এখানে ডিফাইন করা হবে
+  - name: dag-template  # টেমপ্লেট ইনভোকার=আহ্বানকারী, নাম "dag-template" (dag অথবা steps - এর একটি হতেই হবে)
+    dag:  # DAG (Directed Acyclic Graph) টাইপ - টাস্কগুলোর মধ্যে নির্ভরতা/সম্পর্ক ঠিক করে দেয়
+      tasks:  # DAG এর ভেতরের টাস্কগুলোর লিস্ট শুরু
+        - name: A  # টাস্কের নাম "A"
+          template: container-template  # টাস্ক A রান হবে "container-template" ব্যবহার করে
+        - name: B  # টাস্কের নাম "B"
+          template: script-template  # টাস্ক B রান হবে "script-template" ব্যবহার করে
+          dependencies: [A]  # B তখনই রান হবে যখন A সম্পূর্ণ হবে
+        - name: C  # টাস্কের নাম "C"
+          template: resource-template  # টাস্ক C রান হবে "resource-template" ব্যবহার করে
+          dependencies: [A]  # C ও তখনই রান হবে যখন A সম্পূর্ণ হবে (B ও C প্যারালাল চলবে)
+        - name: D  # টাস্কের নাম "D"
+          template: delay-template  # টাস্ক D রান হবে "delay-template" ব্যবহার করে
+          dependencies: [B, C]  # D তখনই রান হবে যখন B এবং C দুটোই সম্পূর্ণ হবে
+# - name: steps-template  # "steps" টাইপ টেমপ্লেট ইনভোকারের উদাহরণ - পুরো ব্লকটি কমেন্ট-আউট, তাই এটি অকার্যকর (dag বা steps এর একটি বেছে নিতে হয়)
+#   steps:  # Steps টাইপ - এখানে ধাপে ধাপে (sequential) টাস্ক চালানো হয়
+#   - - name: step1  # প্রথম ধাপ; বাইরের প্রতিটি লিস্ট = একটি সিরিয়াল ধাপ, ভেতরের আইটেম একসাথে চলবে
+#       template: container-template  # step1 এ "container-template" ব্যবহার হবে
+#   - - name: step2a  # দ্বিতীয় ধাপের প্রথম টাস্ক (step2a, step2b প্যারালাল চলবে)
+#       template: script-template  # step2a এ "script-template" ব্যবহার হবে
+#     - name: step2b  # দ্বিতীয় ধাপের দ্বিতীয় টাস্ক, step2a এর সাথে একই সময়ে চলবে
+#       template: resource-template  # step2b এ "resource-template" ব্যবহার হবে
+#   - - name: step3  # তৃতীয়/শেষ ধাপ - step2a ও step2b শেষ হওয়ার পরে চলবে
+#       template: delay-template  # step3 এ "delay-template" ব্যবহার হবে
+  - name: container-template  # টেমপ্লেট ডেফিনিশন, নাম "container-template" (এখানে আসল কাজ লেখা থাকে)
+    container:  # Container টাইপ টেমপ্লেট - সরাসরি একটি কন্টেইনার রান করবে
+      image: alpine  # কন্টেইনারের ইমেজ - "alpine" (ছোট, লাইটওয়েট লিনাক্স ইমেজ)
+      command: ["/bin/sh", "-c"]  # কন্টেইনারে চালানো কমান্ড - শেল দিয়ে কমান্ড এক্সিকিউট হবে
+      args: ["echo Hello from container template"]  # শেল কমান্ডের আর্গুমেন্ট - এই টেক্সটটি echo/প্রিন্ট হবে
+  - name: script-template  # টেমপ্লেট ডেফিনিশন, নাম "script-template"
+    script:  # Script টাইপ টেমপ্লেট - ইনলাইন স্ক্রিপ্ট কোড রান করে
+      image: python:alpine3.6  # স্ক্রিপ্ট রান করার জন্য পাইথন ইমেজ ব্যবহার হবে
+      command: [python]  # এই ইমেজে স্ক্রিপ্ট রান করার কমান্ড - "python"
+      source: |  # স্ক্রিপ্টের আসল কোড (মাল্টি-লাইন স্ট্রিং) শুরু
+        import random  # random মডিউল ইম্পোর্ট করা হচ্ছে
+        i = random.randint(1, 100)  # ১ থেকে ১০০ এর মধ্যে একটি র‍্যান্ডম সংখ্যা জেনারেট হচ্ছে
+        print(i)  # জেনারেট করা সংখ্যাটি প্রিন্ট হচ্ছে
+  - name: resource-template  # টেমপ্লেট ডেফিনিশন, নাম "resource-template"
+    resource:  # Resource টাইপ টেমপ্লেট - সরাসরি Kubernetes রিসোর্স তৈরি/পরিবর্তন/মুছে দেয়
+      action: create  # এই রিসোর্স টেমপ্লেটের অ্যাকশন - "create" (নতুন রিসোর্স তৈরি করা)
+      manifest: |  # যে Kubernetes মেনিফেস্ট তৈরি হবে, তার সংজ্ঞা (মাল্টি-লাইন YAML) শুরু
+        apiVersion: v1  # তৈরি হওয়া রিসোর্সের API ভার্সন
+        kind: ConfigMap  # তৈরি হওয়া রিসোর্সের টাইপ - একটি ConfigMap
+        metadata:  # ConfigMap এর মেটাডেটা শুরু
+          generateName: argo-wf-resource-template-cm-  # ConfigMap নামের প্রিফিক্স, বাকিটা র‍্যান্ডম জেনারেট হবে
+        data:  # ConfigMap এর ভেতরের আসল key-value ডাটা শুরু
+          created_by: argo-workflows  # একটি key-value পেয়ার - বোঝাচ্ছে এটি argo-workflows দ্বারা তৈরি
+  - name: delay-template  # টেমপ্লেট ডেফিনিশন, নাম "delay-template"
+    suspend:  # Suspend টাইপ টেমপ্লেট - নির্দিষ্ট সময় পর্যন্ত workflow কে থামিয়ে রাখে
+      duration: "20s"  # কতক্ষণ থামিয়ে রাখবে - ২০ সেকেন্ড
