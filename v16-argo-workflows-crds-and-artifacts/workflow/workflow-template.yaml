@@ -1,0 +1,13 @@
+                  ######## akta container template create korlam #########
+apiVersion: argoproj.io/v1alpha1  # Argo Workflow এর API ভার্সন নির্ধারণ করা হচ্ছে
+kind: WorkflowTemplate  # এই রিসোর্সটির টাইপ - এটি একটি WorkflowTemplate 
+# kind: clusterWorkflowTemplate  # এই রিসোর্সটির টাইপ - এটি একটি ClusterWorkflowTemplate (নেমস্পেস-স্কোপ নয়, ক্লাস্টার-স্কোপে ব্যবহৃত হয়)
+metadata:  # মেটাডেটা সেকশন শুরু - নাম, লেবেল ইত্যাদি তথ্য এখানে থাকে 
+  name: argo-wf-template  # WorkflowTemplate এর নাম "argo-wf-template" (WorkflowTemplate এর ক্ষেত্রে generateName ব্যবহার করা যায় না, তাই এখানে name ব্যবহার করা হয়েছে)
+spec:  # Workflow এর মূল স্পেসিফিকেশন (কনফিগারেশন) শুরু হচ্ছে
+  templates:  # Workflow এর টেমপ্লেটস সেকশন শুরু - এখানে বিভিন্ন টাস্কের টেমপ্লেট ডিফাইন করা হবে
+  - name: container-template  # এই টেমপ্লেটের নাম "container-template"
+    container:  # এই টেমপ্লেট একটি কন্টেইনার টাস্ক যা একটি কন্টেইনার রান করবে
+      image: alpine:latest  # ব্যবহার করা ইমেজ - এখানে "alpine:latest" ইমেজ ব্যবহার করা হচ্ছে
+      command: ["/bin/sh", "-c"]  # কন্টেইনারের কমান্ড যা রান হবে - এখানে শেল কমান্ড ব্যবহার করা হচ্ছে
+      args: ["echo {{workflow.parameters.message}}"]  # কমান্ডের আর্গুমেন্ট - এখানে ইনপুট প্যারামিটারের মান ব্যবহার করা হয়েছে
