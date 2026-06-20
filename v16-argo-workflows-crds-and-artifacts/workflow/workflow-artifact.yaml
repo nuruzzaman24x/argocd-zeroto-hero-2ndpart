@@ -1,0 +1,85 @@
+
+apiVersion: argoproj.io/v1alpha1  # Argo Workflow এর API ভার্সন নির্ধারণ করা হচ্ছে
+kind: Workflow  # এই রিসোর্সটির টাইপ - এটি একটি Workflow
+metadata:  # মেটাডেটা সেকশন শুরু - নাম, লেবেল ইত্যাদি তথ্য এখানে থাকে
+  generateName: argo-wf-  # ওয়ার্কফ্লোর নামের প্রিফিক্স; Argo এর পরে র‍্যান্ডম স্ট্রিং জুড়ে দিয়ে আসল নাম বানাবে
+spec:  # Workflow এর মূল স্পেসিফিকেশন (কনফিগারেশন) শুরু হচ্ছে
+  entrypoint: dag-template  # Workflow চালু হবে কোন টেমপ্লেট থেকে - এখানে "dag-template" থেকে শুরু হবে
+  templates:  # সব টেমপ্লেটের লিস্ট এখানে ডিফাইন করা হবে
+  - name: dag-template  # টেমপ্লেট ইনভোকার=আহ্বানকারী, নাম "dag-template" (dag অথবা steps - এর একটি হতেই হবে)
+    dag:  # DAG (Directed Acyclic Graph) টাইপ - টাস্কগুলোর মধ্যে নির্ভরতা/সম্পর্ক ঠিক করে দেয়
+      tasks:  # DAG এর ভেতরের টাস্কগুলোর লিস্ট শুরু
+        - name: A  # টাস্কের নাম "A"
+          template: container-template  # টাস্ক A রান হবে "container-template" ব্যবহার করে
+        
+        - name: B  # টাস্কের নাম "B"
+          template: script-template  # টাস্ক B রান হবে "script-template" ব্যবহার করে
+          dependencies: [A]  # B তখনই রান হবে যখন A সম্পূর্ণ হবে
+        
+        - name: C  # টাস্কের নাম "C"
+          template: resource-template  # টাস্ক C রান হবে "resource-template" ব্যবহার করে
+          dependencies: [A, B]  # C তখনই রান হবে যখন A এবং B দুটোই সম্পূর্ণ হবে (B ও C প্যারালাল চলবে)
+        
+        - name: D  # টাস্কের নাম "D"
+          template: script-template-new  # টাস্ক D রান হবে "script-template-new" ব্যবহার করে
+          dependencies: [A, B, C]  # D তখনই রান হবে যখন A, B এবং C তিনটিই সম্পূর্ণ হবে (A, B, C ও D প্যারালাল চলবে)
+          arguments:  # D টাস্কের আর্গুমেন্টস সেকশন শুরু - এখানে ইনপুট প্যারামিটার ডিফাইন করা হবে
+            artifacts:  # আর্গুমেন্ট আর্টিফ্যাক্টস সেকশন শুরু - এখানে ফাইল ইনপুট ডিফাইন করা হবে
+            - name: random_number_input  # একটি ইনপুট আর্টিফ্যাক্ট, নাম "random_number_input"
+              from: "{{tasks.B.outputs.artifacts.random_number_output}}"  # B টাস্কের আউটপুট আর্টিফ্যাক্ট থেকে ইনপুট নেওয়া হচ্ছে
+        
+        - name: E  # টাস্কের নাম "E"
+          template: delay-template  # টাস্ক E রান হবে "delay-template" ব্যবহার করে  
+          dependencies: [A, B, C, D]  # E তখনই রান হবে যখন A, B, C এবং D তিনটিই সম্পূর্ণ হবে 
+  - name: container-template  # টেমপ্লেট ডেফিনিশন, নাম "container-template" (এখানে আসল কাজ লেখা থাকে) 
+    container:  # Container টাইপ টেমপ্লেট - সরাসরি একটি কন্টেইনার রান করবে 
+      image: alpine  # কন্টেইনারের ইমেজ - "alpine" (ছোট, লাইটওয়েট লিনাক্স ইমেজ)
+      command: ["/bin/sh", "-c"]  # কন্টেইনারে চালানো কমান্ড - শেল দিয়ে কমান্ড এক্সিকিউট হবে
+      args: ["echo Hello from container template"]  # শেল কমান্ডের আর্গুমেন্ট - এই টেক্সটটি echo/প্রিন্ট হবে
+  
+  - name: script-template           # টেমপ্লেট ডেফিনিশন, নাম "script-template"
+    outputs:                     # এই টেমপ্লেটের আউটপুট প্যারামিটার ডিফাইন করা হচ্ছে
+      artifacts:                 # আউটপুট আর্টিফ্যাক্টস সেকশন শুরু - এখানে ফাইল আউটপুট ডিফাইন করা হবে
+      - name: random_number_output     # একটি আউটপুট আর্টিফ্যাক্ট, নাম "random_number_output" 
+        path: /tmp/random_number.txt       # এই আউটপুট আর্টিফ্যাক্টের ফাইল পাথ - স্ক্রিপ্টে যে ফাইলে লেখা হচ্ছে সেটি
+    script:                         # Script টাইপ টেমপ্লেট - ইনলাইন স্ক্রিপ্ট কোড রান করে
+      image: python:alpine3.6       # স্ক্রিপ্ট রান করার জন্য পাইথন ইমেজ ব্যবহার হবে
+      command: [python]             # এই ইমেজে স্ক্রিপ্ট রান করার কমান্ড - "python"
+      source: |                     # স্ক্রিপ্টের আসল কোড (মাল্টি-লাইন স্ট্রিং) শুরু
+        import random               # random মডিউল ইম্পোর্ট করা হচ্ছে
+        i = random.randint(1, 100)  # ১ থেকে ১০০ এর মধ্যে একটি র‍্যান্ডম সংখ্যা জেনারেট হচ্ছে
+        # print(i)                  # জেনারেট করা সংখ্যাটি প্রিন্ট হচ্ছে
+        with open('/tmp/random_number.txt', 'w') as f:  # একটি ফাইল খুলে লেখা হচ্ছে
+          # f.write(f"Random number: {i}")  # ফাইলে র‍্যান্ডম সংখ্যাটি লেখা হচ্ছে
+          f.write(str(i))  # ফাইলে শুধু র‍্যান্ডম সংখ্যাটি লেখা হচ্ছে
+  
+  - name: resource-template   # টেমপ্লেট ডেফিনিশন, নাম "resource-template"
+    resource:                 # Resource টাইপ টেমপ্লেট - সরাসরি Kubernetes রিসোর্স তৈরি/পরিবর্তন/মুছে দেয়
+      action: create          # এই রিসোর্স টেমপ্লেটের অ্যাকশন - "create" (নতুন রিসোর্স তৈরি করা)
+      manifest: |             # যে Kubernetes মেনিফেস্ট তৈরি হবে, তার সংজ্ঞা (মাল্টি-লাইন YAML) শুরু
+        apiVersion: v1        # তৈরি হওয়া রিসোর্সের API ভার্সন
+        kind: ConfigMap       # তৈরি হওয়া রিসোর্সের টাইপ - একটি ConfigMap
+        metadata:             # ConfigMap এর মেটাডেটা শুরু
+          generateName: argo-wf-resource-template-cm-       # ConfigMap নামের প্রিফিক্স, বাকিটা র‍্যান্ডম জেনারেট হবে
+        data:                                               # ConfigMap এর ভেতরের আসল key-value ডাটা শুরু
+          created_by: argo-workflows                        # একটি key-value পেয়ার - বোঝাচ্ছে এটি argo-workflows দ্বারা তৈরি
+
+  - name: script-template-new           # টেমপ্লেট ডেফিনিশন, নাম "script-template-new" 
+    inputs:                      # এই টেমপ্লেটের ইনপুট প্যারামিটার ডিফাইন করা হচ্ছে
+      artifacts:                 # ইনপুট আর্টিফ্যাক্টস সেকশন শুরু - এখানে ফাইল ইনপুট ডিফাইন করা হবে
+      - name: random_number_input     # একটি ইনপুট আর্টিফ্যাক্ট, নাম "random_number_input"
+        path: /tmp/number_input.txt       # এই ইনপুট আর্টিফ্যাক্টের ফাইল পাথ - স্ক্রিপ্টে যে ফাইলে লেখা হবে সেটি
+    script:                         # Script টাইপ টেমপ্লেট - ইনলাইন স্ক্রিপ্ট কোড রান করে
+      image: python:alpine3.6       # স্ক্রিপ্ট রান করার জন্য পাইথন ইমেজ ব্যবহার হবে
+      command: [python]             # এই ইমেজে স্ক্রিপ্ট রান করার কমান্ড - "python"
+      source: |                     # স্ক্রিপ্টের আসল কোড (মাল্টি-লাইন স্ট্রিং) শুরু
+        import random               # random মডিউল ইম্পোর্ট করা হচ্ছে
+        i = random.randint(1, 100)  # ১ থেকে ১০০ এর মধ্যে একটি র‍্যান্ডম সংখ্যা জেনারেট হচ্ছে
+        with open('/tmp/number_input.txt', 'r') as f:  # ফাইল খুলে পড়া হচ্ছে
+          number = f.read()                             # ফাইল থেকে ইনপুট সংখ্যা পড়া হচ্ছে
+          print(f"Random number from input: {number}")  # ইনপুট সংখ্যা প্রিন্ট করা হচ্ছে
+          
+  
+  - name: delay-template  # টেমপ্লেট ডেফিনিশন, নাম "delay-template"
+    suspend:              # Suspend টাইপ টেমপ্লেট - নির্দিষ্ট সময় পর্যন্ত workflow কে থামিয়ে রাখে
+      duration: "20s"     # কতক্ষণ থামিয়ে রাখবে - ২০ সেকেন্ড

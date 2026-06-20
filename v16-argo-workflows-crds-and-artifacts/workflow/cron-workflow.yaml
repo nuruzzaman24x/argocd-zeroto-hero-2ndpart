@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1  # Argo Workflow এর API ভার্সন নির্ধারণ করা হচ্ছে
+kind: CronWorkflow    # এই রিসোর্সটির টাইপ - এটি একটি CronWorkflow, যা নির্দিষ্ট সময়ে স্বয়ংক্রিয়ভাবে Workflow চালায়
+metadata:             # মেটাডেটা সেকশন শুরু - নাম, লেবেল ইত্যাদি তথ্য এখানে থাকে
+  generateName: argo-cron-wf-         # CronWorkflow এর নামের প্রিফিক্স; Argo এর পরে র‍্যান্ডম স্ট্রিং জুড়ে দিয়ে আসল নাম বানাবে
+spec:                 # CronWorkflow এর মূল স্পেসিফিকেশন (schedule + আসল Workflow এর সংজ্ঞা) শুরু
+  # schedule: "*/2 * * * *"          # কত সময় পর পর চলবে - এখানে প্রতি ২ মিনিটে একবার
+  schedule: "* * * * *"          # কত সময় পর পর চলবে - এখানে প্রতি মিনিটে একবার (অর্থাৎ প্রতি মিনিটে একবার এই CronWorkflow রান হবে)
+  suspend: false                    # এই CronWorkflow সাময়িকভাবে বন্ধ রাখা হবে কিনা - false মানে এখন চালু আছে
+  # suspend: true                     # এই CronWorkflow সাময়িকভাবে বন্ধ রাখা হবে - true মানে এখন suspend আছে, চালু করতে হবে
+  # concurrencyPolicy: "Forbid"      # আগের রান চলতে থাকলে নতুন রান কী করবে - Forbid মানে নতুনটা স্কিপ হয়ে যাবে
+  # concurrencyPolicy: "Replace"      # আগের রান চলতে থাকলে নতুন রান কী করবে - Replace মানে আগেরটা কিল করে নতুনটা চালু হবে
+  concurrencyPolicy: "Allow"        # আগের রান চলতে থাকলে নতুন রান কী করবে - Allow মানে নতুনটা আগেরটার সাথে প্যারালাল চলবে
+  startingDeadlineSeconds: 0       # নির্ধারিত সময়ে রান মিস হয়ে গেলে কতক্ষণ পর্যন্ত দেরি করে রান করার চেষ্টা করবে - 0 মানে দেরি allow না
+  successfulJobsHistoryLimit: 2    # সফল হওয়া কতগুলো পুরোনো Workflow রান এর রেকর্ড রাখা হবে
+  failedJobsHistoryLimit: 2        # ফেইল হওয়া কতগুলো পুরোনো Workflow রান এর রেকর্ড রাখা হবে
+  workflowSpec:                    # আসল Workflow এর সংজ্ঞা এখান থেকে শুরু - schedule অনুযায়ী এটাই চলবে
+    entrypoint: dag-template       # Workflow শুরু হবে কোন template থেকে - এখানে "dag-template" থেকে
+    templates:                     # সব টেমপ্লেটের লিস্ট শুরু
+    - name: dag-template           # টেমপ্লেট ইনভোকার, নাম "dag-template"
+      dag:                         # DAG টাইপ - টাস্কগুলোর মধ্যে dependency/সম্পর্ক ঠিক করে দেয়
+        tasks:                     # DAG এর ভেতরের টাস্কগুলোর লিস্ট শুরু
+          - name: A                # টাস্কের নাম "A"
+            template: script-template   # টাস্ক A রান হবে "script-template" ব্যবহার করে
+          - name: B                # টাস্কের নাম "B"
+            template: resource-template  # টাস্ক B রান হবে "resource-template" ব্যবহার করে
+            dependencies: [A]      # B তখনই রান হবে যখন A সম্পূর্ণ হবে
+          - name: C                # টাস্কের নাম "C"
+            template: suspend-template   # টাস্ক C রান হবে "suspend-template" ব্যবহার করে
+            dependencies: [A, B]   # C তখনই রান হবে যখন A এবং B দুটোই সম্পূর্ণ হবে
+    - name: script-template        # টেমপ্লেট ডেফিনিশন, নাম "script-template"
+      script:                      # Script টাইপ টেমপ্লেট - ইনলাইন স্ক্রিপ্ট কোড রান করে
+        image: python:alpine3.6    # স্ক্রিপ্ট রান করার জন্য পাইথন ইমেজ ব্যবহার হবে
+        command: [python]          # এই ইমেজে স্ক্রিপ্ট রান করার কমান্ড - "python"
+        source: |                  # স্ক্রিপ্টের আসল কোড (মাল্টি-লাইন স্ট্রিং) শুরু
+          import random            # random মডিউল ইম্পোর্ট করা হচ্ছে
+          i = random.randint(1, 10)  # ১ থেকে ১০ এর মধ্যে একটি র‍্যান্ডম সংখ্যা জেনারেট হচ্ছে
+          print(i)                 # জেনারেট করা সংখ্যাটি প্রিন্ট হচ্ছে
+    - name: resource-template      # টেমপ্লেট ডেফিনিশন, নাম "resource-template"
+      resource:                    # Resource টাইপ টেমপ্লেট - সরাসরি Kubernetes রিসোর্স তৈরি/পরিবর্তন/মুছে দেয়
+        action: create             # এই রিসোর্স টেমপ্লেটের অ্যাকশন - "create" (নতুন রিসোর্স তৈরি করা)
+        manifest: |                # যে Kubernetes মেনিফেস্ট তৈরি হবে, তার সংজ্ঞা (মাল্টি-লাইন YAML) শুরু
+          apiVersion: v1            # তৈরি হওয়া রিসোর্সের API ভার্সন
+          kind: ConfigMap           # তৈরি হওয়া রিসোর্সের টাইপ - একটি ConfigMap
+          metadata:                 # ConfigMap এর মেটাডেটা শুরু
+            generateName: argo-wf-resource-template-cm-   # ConfigMap নামের প্রিফিক্স, বাকিটা র‍্যান্ডম জেনারেট হবে
+          data:                     # ConfigMap এর ভেতরের আসল key-value ডাটা শুরু
+            created_by: argo-wrkflows   # একটি key-value পেয়ার - বোঝাচ্ছে এটি argo-workflows দ্বারা তৈরি
+    - name: suspend-template       # টেমপ্লেট ডেফিনিশন, নাম "suspend-template"
+      suspend:                     # Suspend টাইপ টেমপ্লেট - নির্দিষ্ট সময় পর্যন্ত workflow কে থামিয়ে রাখে
+        duration: "20s"            # কতক্ষণ থামিয়ে রাখবে - ২০ সেকেন্ড
