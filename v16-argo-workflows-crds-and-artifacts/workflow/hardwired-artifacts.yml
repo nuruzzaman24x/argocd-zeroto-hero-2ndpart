@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1      # Argo Workflow এর API ভার্সন নির্ধারণ করা হচ্ছে
+kind: Workflow                      # এই রিসোর্সটির টাইপ - এটি একটি Workflow
+metadata:                           # মেটাডেটা সেকশন শুরু - নাম, লেবেল ইত্যাদি তথ্য এখানে থাকে
+  generateName: hardwired-artifact-         # ওয়ার্কফ্লোর নামের প্রিফিক্স; Argo এর পরে র‍্যান্ডম স্ট্রিং জুড়ে দিয়ে আসল নাম বানাবে
+spec:                                       # Workflow এর মূল স্পেসিফিকেশন (কনফিগারেশন) শুরু হচ্ছে
+  entrypoint: hardwired-artifact            # Workflow চালু হবে কোন টেমপ্লেট থেকে - এখানে "hardwired-artifact" থেকে শুরু হবে
+  templates:                                # সব টেমপ্লেটের লিস্ট এখানে ডিফাইন করা হবে
+  - name: hardwired-artifact                # টেমপ্লেট ইনভোকার=আহ্বানকারী, নাম "hardwired-artifact" (dag অথবা steps - এর একটি হতেই হবে)
+    inputs:                                 # ইনপুট প্যারামিটার সেকশন শুরু - এখানে ইনপুট প্যারামিটার ডিফাইন করা হবে
+      artifacts:                            # ইনপুট আর্টিফ্যাক্টস সেকশন শুরু - এখানে ফাইল ইনপুট ডিফাইন করা হবে
+      # Check out the main branch of the argo repo and place it at /devopsbangla
+      # revision can be anything that git checkout accepts: branch, commit, tag, etc.
+      - name: argo-source               # একটি ইনপুট আর্টিফ্যাক্ট, নাম "argo-source"
+        path: /devopsbangla           # এই ইনপুট আর্টিফ্যাক্টের ফাইল পাথ - টাস্কে যে ফাইলে লেখা হচ্ছে সেটি
+        git:                          # এই ইনপুট আর্টিফ্যাক্টের সোর্স - এখানে Git রিপোজিটরি থেকে ডাউনলোড করা হবে
+          repo: https://github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git         # Git রিপোজিটরির URL
+          revision: "main"                                                              # Git রিপোজিটরির রিভিশন (ব্রাঞ্চ, কমিট, ট্যাগ ইত্যাদি) যা চেকআউট করা হবে
+      # Download docker-compose v2.23.0 and place it at /usr/local/bin/
+      - name: docker-compose       # একটি ইনপুট আর্টিফ্যাক্ট, নাম "docker-compose"                            
+        path: /usr/local/bin/docker-compose           # এই ইনপুট আর্টিফ্যাক্টের ফাইল পাথ - টাস্কে যে ফাইলে লেখা হচ্ছে সেটি
+        mode: 0755                      # এই ইনপুট আর্টিফ্যাক্টের ফাইল মোড - এখানে 0755 সেট করা হয়েছে, যা ফাইলটিকে executable করে তোলে  
+        http:                           # এই ইনপুট আর্টিফ্যাক্টের সোর্স - এখানে HTTP URL থেকে ডাউনলোড করা হবে
+          url: https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-linux-x86_64      # HTTP URL যা থেকে ফাইলটি ডাউনলোড করা হবে
+    container:            # Container টাইপ টেমপ্লেট - সরাসরি একটি কন্টেইনার রান করবে
+      image: alpine       # কন্টেইনারের ইমেজ - "alpine" (ছোট, লাইটওয়েট লিনাক্স ইমেজ)
+      command: [sh, -c]     # কন্টেইনারে চালানো কমান্ড - শেল দিয়ে কমান্ড এক্সিকিউট হবে
+      args: ["ls -l /devopsbangla /usr/local/bin/docker-compose"]         # শেল কমান্ডের আর্গুমেন্ট - এই টেক্সটটি echo/প্রিন্ট হবে, এখানে দুইটি ফাইলের লিস্টিং দেখানো হবে (argo-source এবং docker-compose)

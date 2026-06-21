@@ -4,6 +4,8 @@ kind: Workflow  # এই রিসোর্সটির টাইপ - এটি
 metadata:  # মেটাডেটা সেকশন শুরু - নাম, লেবেল ইত্যাদি তথ্য এখানে থাকে
   generateName: argo-wf-  # ওয়ার্কফ্লোর নামের প্রিফিক্স; Argo এর পরে র‍্যান্ডম স্ট্রিং জুড়ে দিয়ে আসল নাম বানাবে
 spec:  # Workflow এর মূল স্পেসিফিকেশন (কনফিগারেশন) শুরু হচ্ছে
+  artifactRepositoryRef:  # আর্টিফ্যাক্ট রিপোজিটরি রেফারেন্স সেকশন - এখানে আর্টিফ্যাক্ট স্টোরেজ কনফিগার করা হবে
+    configMap: artifact-repository  # আর্টিফ্যাক্ট রিপোজিটরি হিসেবে "artifact-repository" নামের ConfigMap ব্যবহার করা হবে 
   entrypoint: dag-template  # Workflow চালু হবে কোন টেমপ্লেট থেকে - এখানে "dag-template" থেকে শুরু হবে
   templates:  # সব টেমপ্লেটের লিস্ট এখানে ডিফাইন করা হবে
   - name: dag-template  # টেমপ্লেট ইনভোকার=আহ্বানকারী, নাম "dag-template" (dag অথবা steps - এর একটি হতেই হবে)
