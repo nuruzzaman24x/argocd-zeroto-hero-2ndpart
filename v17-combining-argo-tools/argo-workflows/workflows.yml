@@ -6,11 +6,11 @@ spec:
   arguments:
     parameters:
       - name: repo-url
-        value: "https://github.com/nuruzzaman24x/argocd-tutorial.git"
+        value: "https://github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git"
       - name: branch
         value: main
       - name: docker-hosted
-        value: 172.17.0.233:5000
+        value: 172.17.0.232:5000
   artifactRepositoryRef:
     configMap: artifact-repository    #kubectl get configmaps -n argo || artifact-repository ai rokom nam asbe data soho#
   entrypoint: ci
