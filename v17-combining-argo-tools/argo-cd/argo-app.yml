@@ -10,7 +10,7 @@ spec:
   project: default
   source:
     path: v17-combining-argo-tools/argo-rollouts
-    repoURL: https://github.com/nuruzzaman24x/argocd-tutorial.git
+    repoURL: https://github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git
     targetRevision: main
   syncPolicy:
     syncOptions:
