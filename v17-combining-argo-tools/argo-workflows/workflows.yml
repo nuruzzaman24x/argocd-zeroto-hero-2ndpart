@@ -6,11 +6,11 @@ spec:
   arguments:
     parameters:
       - name: repo-url
-        value: https://USERNAME:TOKEN@github.com/devopshobbies/argocd-tutorial.git
+        value: https://github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git
       - name: branch
         value: main
       - name: nexus-registry
-        value: 192.168.233.214:8085
+        value: 172.17.0.232:5000
   artifactRepositoryRef:
     configMap: artifact-repository
   entrypoint: ci
@@ -22,6 +22,7 @@ spec:
         templateRef:
           name: clone-repo-wf-template
           template: clone-repo
+
       - name: build-push-task
         templateRef:
           name: build-push-wf-template
@@ -31,6 +32,7 @@ spec:
             - name: source
               from: "{{tasks.clone-repo-task.outputs.artifacts.source}}"
         dependencies: [clone-repo-task]
+        
       - name: update-manifest-task
         templateRef:
           name: update-manifest-wf-template

@@ -15,8 +15,8 @@ spec:
         command: [sh]
         source: |
           sed -i s'/image:.*/image: {{workflow.parameters.nexus-registry}}\/nginx:{{workflow.uid}}/' nginx-rollouts.yml
-          git config user.name "USERNAME"
-          git config user.email "EMAIL"
+          git config user.name "nuruzzaman24x"
+          git config user.email "nuruzzamanmd85@gmail.com"
           git add .
           git commit -m "image.tag has been changed to {{workflow.uid}}"
           git push origin {{workflow.parameters.branch}}

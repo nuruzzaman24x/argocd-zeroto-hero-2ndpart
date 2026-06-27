@@ -1,0 +1,22 @@
+apiVersion: v1    # এই লাইনটি Kubernetes API এর সংস্করণ নির্ধারণ করে, যা এখানে v1 ব্যবহার করা হয়েছে।
+kind: ConfigMap    # এই লাইনটি Kubernetes object এর প্রকার নির্ধারণ করে, যা এখানে ConfigMap ব্যবহার করা হয়েছে
+metadata:           # এই লাইনটি Kubernetes object এর মেটাডেটা নির্ধারণ করে, যা এখানে ConfigMap এর নাম এবং অ্যানোটেশন অন্তর্ভুক্ত করে।
+  #If you want to use this config map by default, name it "artifact-repositories". Otherwise, you can provide a reference to a
+ # different config map in `artifactRepositoryRef.configMap`.
+  name: artifact-repository     # এই লাইনটি ConfigMap এর নাম নির্ধারণ করে, যা এখানে "artifact-repository" সেট করা হয়েছে।
+  annotations:                  # এই লাইনটি Kubernetes object এর অ্যানোটেশন নির্ধারণ করে, যা এখানে Argo Workflows এর ডিফল্ট আর্টিফ্যাক্ট রিপোজিটরি হিসাবে এই ConfigMap ব্যবহার করার নির্দেশ দেয়।
+    # v3.0 and after - if you want to use a specific key, put that key into this annotation.
+    workflows.argoproj.io/default-artifact-repository: minio-artifact-repo      # এই লাইনটি Argo Workflows এর ডিফল্ট আর্টিফ্যাক্ট রিপোজিটরি হিসাবে "minio-artifact-repo" কনফিগারেশন ব্যবহার করার নির্দেশ দেয়।
+data:               		# এই লাইনটি ConfigMap এর ডেটা নির্ধারণ করে, যা এখানে "minio-artifact-repo" কনফিগারেশন অন্তর্ভুক্ত করে।
+  minio-artifact-repo: |      # এই লাইনটি "minio-artifact-repo" কনফিগারেশন শুরু করে, যা YAML ফরম্যাটে MinIO সার্ভারের সাথে সংযোগের তথ্য নির্ধারণ করে।
+    s3:                       # এই লাইনটি MinIO সার্ভারের সাথে সংযোগের জন্য S3 প্রোটোকল ব্যবহার করার নির্দেশ দেয়।
+      bucket: n8n-bucket       # এই লাইনটি MinIO সার্ভারে ব্যবহৃত বালতির নাম নির্ধারণ করে, যা এখানে "n8n-bucket" সেট করা হয়েছে।
+      endpoint: argo-artifacts.argo:9000      # এই লাইনটি MinIO সার্ভারের এন্ডপয়েন্ট নির্ধারণ করে, যা এখানে "argo-artifacts.argo:9000" সেট করা হয়েছে।
+      insecure: true                # এই লাইনটি MinIO সার্ভারের সাথে সংযোগের সময় TLS যাচাই নিষ্ক্রিয় করার নির্দেশ দেয়, যা এখানে "true" সেট করা হয়েছে।
+      accessKeySecret:              # এই লাইনটি MinIO সার্ভারের সাথে সংযোগের জন্য অ্যাক্সেস কী নির্ধারণ করে, যা একটি Kubernetes সিক্রেট থেকে নেওয়া হবে।
+        name: n8n-minio-cred         # এই লাইনটি Kubernetes সিক্রেটের নাম নির্ধারণ করে, যা এখানে "n8n-minio-cred" সেট করা হয়েছে।
+        key: access-key             # এই লাইনটি Kubernetes সিক্রেটের কী নির্ধারণ করে, যা এখানে "access-key" সেট করা
+      secretKeySecret:              # এই লাইনটি MinIO সার্ভারের সাথে সংযোগের জন্য সিক্রেট কী নির্ধারণ করে, যা একটি Kubernetes সিক্রেট থেকে নেওয়া হবে।
+        name: n8n-minio-cred          # এই লাইনটি Kubernetes সিক্রেটের নাম নির্ধারণ করে, যা এখানে "n8n-minio-cred" সেট করা হয়েছে।
+        key: secret-key             # এই লাইনটি Kubernetes সিক্রেটের কী নির্ধারণ
+
