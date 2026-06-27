@@ -1,41 +1,99 @@
+# apiVersion: argoproj.io/v1alpha1
+# kind: Rollout
+# metadata:
+#   name: nginx-rollouts
+# spec:
+#   replicas: 5
+#   strategy:
+#     canary:
+#       steps:
+#       - setWeight: 20
+#       - pause: {}
+#       - setWeight: 40
+#       - pause: {duration: 10s}
+#       - setWeight: 60
+#       - pause: {duration: 20s}
+#       - setWeight: 80
+#       - pause: {duration: 1m}
+#   selector:
+#     matchLabels:
+#       app: nginx-rollouts
+#   template:
+#     metadata:
+#       labels:
+#         app: nginx-rollouts
+#     spec:
+#       containers:
+#       - name: nginx-rollouts
+#         image: 172.17.0.232:5000/nginx:alpine
+#         ports:
+#         - containerPort: 80
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: nginx-service
+# spec:
+#   ports:
+#   - port: 8080
+#     targetPort: 80
+#   selector:
+#     app: nginx-rollouts
+
+
 apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
   name: nginx-rollouts
 spec:
   replicas: 5
+
   strategy:
     canary:
       steps:
       - setWeight: 20
       - pause: {}
       - setWeight: 40
-      - pause: {duration: 10s}
+      - pause:
+          duration: 10s
       - setWeight: 60
-      - pause: {duration: 20s}
+      - pause:
+          duration: 20s
       - setWeight: 80
-      - pause: {duration: 1m}
+      - pause:
+          duration: 1m
+
   selector:
     matchLabels:
       app: nginx-rollouts
+
   template:
     metadata:
       labels:
         app: nginx-rollouts
+
     spec:
+      imagePullSecrets:
+        - name: nexus-regcred
+
       containers:
-      - name: nginx-rollouts
-        image: 172.17.0.232:5000/nginx:alpine
-        ports:
-        - containerPort: 80
+        - name: nginx-rollouts
+          image: 172.17.0.232:5000/nginx:alpine
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 80
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: nginx-service
+
 spec:
-  ports:
-  - port: 8080
-    targetPort: 80
   selector:
     app: nginx-rollouts
+
+  ports:
+    - port: 8080
+      targetPort: 80
