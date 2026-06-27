@@ -5,12 +5,12 @@ metadata:
   namespace: argocd
 spec:
   destination:
-    namespace: argo-demo
+    namespace: argo
     server: https://kubernetes.default.svc
   project: default
   source:
     path: v17-combining-argo-tools/argo-rollouts
-    repoURL: https://github.com/devopshobbies/argocd-tutorial.git
+    repoURL: https://github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git
     targetRevision: main
   syncPolicy:
     syncOptions:
