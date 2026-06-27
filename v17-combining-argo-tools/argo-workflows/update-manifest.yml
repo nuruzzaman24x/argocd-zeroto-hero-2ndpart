@@ -2,35 +2,21 @@ apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
   name: update-manifest-wf-template
-  namespace: argo
 spec:
   templates:
     - name: update-manifest
       inputs:
         artifacts:
-          - name: source
-            path: /tmp/source
+        - name: source
+          path: /tmp/source
       script:
         image: alpine/git
         workingDir: /tmp/source/v17-combining-argo-tools/argo-rollouts
         command: [sh]
-        env:
-          - name: GIT_USERNAME
-            valueFrom:
-              secretKeyRef:
-                name: github-creds
-                key: username
-          - name: GIT_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: github-creds
-                key: password
         source: |
-          echo "machine github.com login $GIT_USERNAME password $GIT_PASSWORD" > ~/.netrc
-          chmod 600 ~/.netrc
-          sed -i s'/image:.*/image: {{workflow.parameters.docker-hosted}}\/nginx:{{workflow.uid}}/' nginx-rollouts.yml
-          git config user.name "$GIT_USERNAME"
-          git config user.email "nuruzzamanmd85@gmail.com"
+          sed -i s'/image:.*/image: {{workflow.parameters.nexus-registry}}\/nginx:{{workflow.uid}}/' nginx-rollouts.yml
+          git config user.name "USERNAME"
+          git config user.email "EMAIL"
           git add .
           git commit -m "image.tag has been changed to {{workflow.uid}}"
           git push origin {{workflow.parameters.branch}}
