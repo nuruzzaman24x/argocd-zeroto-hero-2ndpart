@@ -1,43 +1,219 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to My Website</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome to ArgoCD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1526;
+    --panel:#161E33;
+    --panel-border:#26304A;
+    --accent:#F2762E;
+    --accent-soft:rgba(242,118,46,.14);
+    --green:#34D399;
+    --green-soft:rgba(52,211,153,.14);
+    --text:#EEF1F8;
+    --text-muted:#8B95AE;
+    --text-faint:#56607C;
+    --font-display:'Space Grotesk', sans-serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+  }
 
-        .container {
-            text-align: center;
-            color: #333;
-        }
+  *{box-sizing:border-box;}
 
-        h1 {
-            font-size: 3em;
-            margin-bottom: 0.5em;
-            color: #3498db;
-        }
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background-color:var(--bg);
+    background-image:
+      radial-gradient(circle at 18px 18px, rgba(255,255,255,.05) 1.4px, transparent 1.4px),
+      radial-gradient(ellipse 600px 400px at 50% 0%, rgba(242,118,46,.10), transparent 70%);
+    background-size: 36px 36px, 100% 100%;
+    font-family:var(--font-body);
+    color:var(--text);
+    padding:24px;
+  }
 
-        p {
-            font-size: 1.5em;
-            margin-top: 0;
-            color: #777;
-        }
-    </style>
+  .card{
+    width:100%;
+    max-width:480px;
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:14px;
+    padding:36px 36px 28px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.55);
+    opacity:0;
+    transform:translateY(14px);
+    animation:rise .7s cubic-bezier(.2,.7,.3,1) forwards;
+  }
+
+  @keyframes rise{
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  /* --- reconciliation flow strip --- */
+  .flow{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:30px;
+  }
+  .flow-label{
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    letter-spacing:.12em;
+    color:var(--text-faint);
+    background:var(--bg);
+    padding:0 6px;
+    position:relative;
+    z-index:1;
+  }
+  .flow-line{
+    position:absolute;
+    left:0; right:0; top:50%;
+    height:1px;
+    background:var(--panel-border);
+  }
+  .flow-dot{
+    position:absolute;
+    top:50%;
+    width:6px; height:6px;
+    border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 8px 1px var(--accent);
+    transform:translate(-50%,-50%);
+    animation:travel 3.2s ease-in-out infinite;
+  }
+  @keyframes travel{
+    0%   { left:0%;   background:var(--accent); box-shadow:0 0 8px 1px var(--accent); }
+    45%  { left:50%;  background:var(--accent); box-shadow:0 0 8px 1px var(--accent); }
+    55%  { left:50%;  background:var(--green);  box-shadow:0 0 8px 1px var(--green); }
+    100% { left:100%; background:var(--green);  box-shadow:0 0 8px 1px var(--green); }
+  }
+
+  h1{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:clamp(1.7rem, 5vw, 2.15rem);
+    line-height:1.15;
+    margin:0 0 10px;
+    letter-spacing:-.01em;
+  }
+
+  .tagline{
+    margin:0 0 26px;
+    color:var(--text-muted);
+    font-size:.97rem;
+    line-height:1.5;
+  }
+
+  .status-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-family:var(--font-mono);
+    font-size:.78rem;
+    font-weight:500;
+    padding:6px 11px;
+    border-radius:6px;
+    border:1px solid transparent;
+  }
+  .pill.synced{ background:var(--green-soft); color:var(--green); border-color:rgba(52,211,153,.3); }
+  .pill.healthy{ background:var(--green-soft); color:var(--green); border-color:rgba(52,211,153,.3); }
+  .pill .dot{
+    width:6px; height:6px; border-radius:50%;
+    background:currentColor;
+    animation:pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ opacity:1; }
+    50%{ opacity:.35; }
+  }
+
+  .version{
+    margin-left:auto;
+    font-family:var(--font-mono);
+    font-size:.8rem;
+    font-weight:600;
+    color:var(--accent);
+    background:var(--accent-soft);
+    border:1px solid rgba(242,118,46,.3);
+    padding:6px 11px;
+    border-radius:6px;
+  }
+
+  .divider{
+    height:1px;
+    background:var(--panel-border);
+    margin:0 0 16px;
+  }
+
+  .meta{
+    font-family:var(--font-mono);
+    font-size:.74rem;
+    color:var(--text-faint);
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .meta span b{ color:var(--text-muted); font-weight:500; }
+
+  @media (prefers-reduced-motion: reduce){
+    .card{ animation:none; opacity:1; transform:none; }
+    .flow-dot{ animation:none; left:50%; background:var(--accent); }
+    .pill .dot{ animation:none; }
+  }
+
+  @media (max-width:420px){
+    .card{ padding:28px 22px 22px; }
+    .version{ margin-left:0; }
+  }
+</style>
 </head>
-
 <body>
-    <div class="container">
-        <h1>Welcome to My Website, Version 1.0</h1>
+  <div class="card">
+
+    <div class="flow">
+      <div class="flow-line"></div>
+      <div class="flow-dot"></div>
+      <span class="flow-label">GIT</span>
+      <span class="flow-label">SYNC</span>
+      <span class="flow-label">CLUSTER</span>
     </div>
+
+    <h1>Welcome to ArgoCD</h1>
+    <p class="tagline">Declarative GitOps continuous delivery for Kubernetes — your Git repo is the source of truth.</p>
+
+    <div class="status-row">
+      <span class="pill synced"><span class="dot"></span>Synced</span>
+      <span class="pill healthy"><span class="dot"></span>Healthy</span>
+      <span class="version">v1.0.0</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="meta">
+      <span>app: <b>webapp</b></span>
+      <span>env: <b>production</b></span>
+      <span>last sync: <b>just now</b></span>
+    </div>
+
+  </div>
 </body>
 </html>
