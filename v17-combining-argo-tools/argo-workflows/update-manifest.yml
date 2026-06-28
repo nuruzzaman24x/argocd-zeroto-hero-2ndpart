@@ -2,21 +2,47 @@ apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
   name: update-manifest-wf-template
+
 spec:
   templates:
+
     - name: update-manifest
+
       inputs:
         artifacts:
-        - name: source
-          path: /tmp/source
+          - name: source
+            path: /tmp/source
+
+      volumes:
+        - name: github-cred
+          secret:
+            secretName: github-cred
+
       script:
         image: alpine/git
+
         workingDir: /tmp/source/v17-combining-argo-tools/argo-rollouts
+
         command: [sh]
+
+        volumeMounts:
+          - name: github-cred
+            mountPath: /secret
+
         source: |
-          sed -i s'/image:.*/image: {{workflow.parameters.nexus-registry}}\/nginx:{{workflow.uid}}/' nginx-rollouts.yml
-          git config user.name "nuruzzaman24x"
-          git config user.email "nuruzzamanmd85@gmail.com"
+
+          sed -i 's|image:.*|image: {{workflow.parameters.nexus-registry}}/nginx:{{workflow.uid}}|' nginx-rollouts.yml
+
+          git config --global user.name "nuruzzaman24x"
+          git config --global user.email "nuruzzamanmd85@gmail.com"
+
+          USERNAME=$(cat /secret/username)
+          TOKEN=$(cat /secret/token)
+
+          git remote set-url origin https://${USERNAME}:${TOKEN}@github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git
+
           git add .
-          git commit -m "image.tag has been changed to {{workflow.uid}}"
+
+          git commit -m "image.tag has been changed to {{workflow.uid}}" || true
+
           git push origin {{workflow.parameters.branch}}

@@ -1,5 +1,51 @@
-# First of all, use the below command to create docker-config-secret for pushing images to your private registry
-# kubectl create secret generic docker-config-secret --from-file=/path/to/.docker/config.json -n argo
+# # First of all, use the below command to create docker-config-secret for pushing images to your private registry
+# # kubectl create secret generic docker-config-secret --from-file=/path/to/.docker/config.json -n argo
+# apiVersion: argoproj.io/v1alpha1
+# kind: WorkflowTemplate
+# metadata:
+#   name: build-push-wf-template
+# spec:
+#   templates:
+#     - name: build-and-push
+#       inputs:
+#         artifacts:
+#         - name: source
+#           path: /tmp/source
+#       volumes:
+#         - name: docker-config-secret
+#           secret:
+#             secretName: docker-config-secret
+#       container:
+#         readinessProbe:
+#           exec:
+#             command: [ sh, -c, "buildctl debug workers" ]
+#         image: moby/buildkit:v0.9.3-rootless
+#         volumeMounts:
+#           - name: docker-config-secret
+#             mountPath: /.docker
+#         workingDir: /tmp/source/v17-combining-argo-tools/app
+#         env:
+#           - name: BUILDKITD_FLAGS
+#             value: --oci-worker-no-process-sandbox
+#           - name: DOCKER_CONFIG
+#             value: /.docker
+#         command:
+#           - buildctl-daemonless.sh
+#         args:
+#           - build
+#           - --frontend
+#           - dockerfile.v0
+#           - --local
+#           - context=.
+#           - --local
+#           - dockerfile=.
+#           - --output
+#           - type=image,name={{workflow.parameters.nexus-registry}}/nginx:{{workflow.uid}},push=true,registry.insecure=true
+#         securityContext:
+#           privileged: true
+
+
+
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
@@ -9,28 +55,52 @@ spec:
     - name: build-and-push
       inputs:
         artifacts:
-        - name: source
-          path: /tmp/source
+          - name: source
+            path: /tmp/source
+
       volumes:
         - name: docker-config-secret
           secret:
             secretName: docker-config-secret
+
+        - name: buildkit-state
+          emptyDir: {}
+
       container:
+        image: moby/buildkit:v0.22.0-rootless
+
+        workingDir: /tmp/source/v17-combining-argo-tools/app
+
+        securityContext:
+          privileged: true
+
         readinessProbe:
           exec:
-            command: [ sh, -c, "buildctl debug workers" ]
-        image: moby/buildkit:v0.9.3-rootless
-        volumeMounts:
-          - name: docker-config-secret
-            mountPath: /.docker
-        workingDir: /tmp/source/v17-combining-argo-tools/app
+            command:
+              - sh
+              - -c
+              - buildctl debug workers
+
         env:
           - name: BUILDKITD_FLAGS
             value: --oci-worker-no-process-sandbox
+
           - name: DOCKER_CONFIG
             value: /.docker
+
+          - name: XDG_RUNTIME_DIR
+            value: /tmp/buildkit
+
+        volumeMounts:
+          - name: docker-config-secret
+            mountPath: /.docker
+
+          - name: buildkit-state
+            mountPath: /tmp/buildkit
+
         command:
           - buildctl-daemonless.sh
+
         args:
           - build
           - --frontend
@@ -41,5 +111,3 @@ spec:
           - dockerfile=.
           - --output
           - type=image,name={{workflow.parameters.nexus-registry}}/nginx:{{workflow.uid}},push=true,registry.insecure=true
-        securityContext:
-          privileged: true
