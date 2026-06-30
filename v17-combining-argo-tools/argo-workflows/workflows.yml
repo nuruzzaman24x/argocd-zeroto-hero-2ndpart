@@ -42,3 +42,54 @@ spec:
             - name: source
               from: "{{tasks.clone-repo-task.outputs.artifacts.source}}"
         dependencies: [clone-repo-task, build-push-task]
+
+
+
+
+# apiVersion: argoproj.io/v1alpha1   # Argo Workflows-এর কোন API group/version অনুযায়ী এই অবজেক্ট লেখা
+# kind: Workflow   # অবজেক্টের ধরন — এবার এটা "Workflow" (ব্লুপ্রিন্ট না, আসল রান-হওয়া জিনিস)
+# metadata:   # অবজেক্টের নাম/namespace ইত্যাদি মেটাডেটা সেকশন শুরু
+#   generateName: argo-demo-   # নির্দিষ্ট নাম না দিয়ে শুধু প্রিফিক্স দেওয়া হয়েছে, প্রতিবার সাবমিট করলে Kubernetes নিজে শেষে র‍্যান্ডম সাফিক্স জুড়ে ইউনিক নাম বানাবে (যেমন argo-demo-a8f3k)
+# spec:   # মূল specification শুরু
+#   arguments:   # এই Workflow-কে যেসব ইনপুট ভ্যালু দেওয়া হবে তার সেকশন শুরু
+#     parameters:   # প্যারামিটার লিস্ট শুরু — এগুলোই {{workflow.parameters.X}} হিসেবে আগের তিনটা ফাইলে ব্যবহার হয়েছিল
+#       - name: repo-url   # প্রথম প্যারামিটারের নাম — "repo-url"
+#         value: https://github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git   # এর আসল ভ্যালু — clone-repo-wf-template-এর git clone কমান্ডে এটাই বসে
+#       - name: branch   # দ্বিতীয় প্যারামিটারের নাম — "branch"
+#         value: main   # এর ভ্যালু "main" — update-manifest-wf-template-এর শেষের git push কমান্ডে এটাই বসে
+#       - name: nexus-registry   # তৃতীয় প্যারামিটারের নাম — "nexus-registry"
+#         value: 172.17.0.232:5000   # এর ভ্যালু — build-push আর update-manifest দুই জায়গাতেই ইমেজ পাথ বানাতে এটা ব্যবহার হয়
+#   artifactRepositoryRef:   # artifact (যেমন source code) কোথায় স্টোর হবে তা বলার সেকশন
+#     configMap: artifact-repository   # কোন ConfigMap থেকে স্টোরেজ কনফিগ (MinIO bucket, endpoint, secret) পড়া হবে তার নাম — আগে আমরা একসাথে এই ConfigMap-ই বানিয়েছিলাম
+    
+#   entrypoint: ci   # এই Workflow শুরু হলে কোন template প্রথমে রান হবে — নিচে "ci" নামের template-টাই শুরুর পয়েন্ট
+
+#   templates:   # এই Workflow-এর ভেতরের template-গুলোর লিস্ট শুরু
+#   - name: ci   # entrypoint-এ উল্লেখ করা সেই "ci" template-এর সংজ্ঞা শুরু
+#     dag:   # এই template-এর ভেতরের task-গুলো DAG (Directed Acyclic Graph) আকারে চলবে, মানে dependency অনুযায়ী অর্ডার ঠিক হবে
+#       tasks:   # DAG-এর ভেতরের পৃথক task-গুলোর লিস্ট শুরু
+
+#       - name: clone-repo-task   # প্রথম task-এর নাম — পরে dependencies-এ এই নাম দিয়েই রেফার করা হবে
+#         templateRef:   # এই task আসলে কোন বাইরের WorkflowTemplate-কে কল করবে তা বলার সেকশন
+#           name: clone-repo-wf-template   # কোন WorkflowTemplate ফাইল কল হবে — প্রথম ফাইল, যেটা আমরা একসাথে দেখেছি
+#           template: clone-repo   # সেই ফাইলের ভেতরের কোন নির্দিষ্ট template (স্টেপ) চালানো হবে
+
+#       - name: build-push-task   # দ্বিতীয় task-এর নাম
+#         templateRef:   # কোন WorkflowTemplate কল হবে তার সেকশন
+#           name: build-push-wf-template   # দ্বিতীয় ফাইল — BuildKit দিয়ে image বিল্ড করে Nexus-এ push করে
+#           template: build-and-push   # সেই ফাইলের ভেতরের নির্দিষ্ট template নাম
+#         arguments:   # এই task-কে কী ইনপুট দেওয়া হবে তার সেকশন
+#           artifacts:   # ইনপুট আর্টিফ্যাক্ট লিস্ট শুরু
+#             - name: source   # ইনপুট আর্টিফ্যাক্টের নাম — build-push-wf-template যেই নামে ইনপুট আশা করে ঠিক সেটাই
+#               from: "{{tasks.clone-repo-task.outputs.artifacts.source}}"   # ডেটা আসছে কোথা থেকে — clone-repo-task যেই "source" আউটপুট দিয়েছিল, ঠিক সেটাই এখানে ইনপুট হিসেবে বসছে
+#         dependencies: [clone-repo-task]   # এই task শুরুর আগে clone-repo-task শেষ হতে হবে, তাই এটা তার পরেই চলবে
+        
+#       - name: update-manifest-task   # তৃতীয় ও শেষ task-এর নাম
+#         templateRef:   # কোন WorkflowTemplate কল হবে তার সেকশন
+#           name: update-manifest-wf-template   # তৃতীয় ফাইল — manifest-এ নতুন ইমেজ ট্যাগ বসিয়ে Git-এ push করে
+#           template: update-manifest   # সেই ফাইলের ভেতরের নির্দিষ্ট template নাম
+#         arguments:   # এই task-কে কী ইনপুট দেওয়া হবে
+#           artifacts:   # ইনপুট আর্টিফ্যাক্ট লিস্ট শুরু
+#             - name: source   # ইনপুট আর্টিফ্যাক্টের নাম
+#               from: "{{tasks.clone-repo-task.outputs.artifacts.source}}"   # এখানেও clone-repo-task-এর output নেওয়া হচ্ছে (build-push-task-এর না), কারণ manifest ফাইল এডিট করতে আসল কোডটাই লাগে, build ধাপ কোনো নতুন কোড-ফাইল আউটপুট করে না
+#         dependencies: [clone-repo-task, build-push-task]   # এই task শুরুর আগে দুটোই শেষ হতে হবে — clone-repo-task থেকে কোড পেতে, আর build-push-task নিশ্চিত হতে যে নতুন ইমেজ আগেই push হয়ে গেছে

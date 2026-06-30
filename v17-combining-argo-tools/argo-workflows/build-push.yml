@@ -1,51 +1,5 @@
-# # First of all, use the below command to create docker-config-secret for pushing images to your private registry
-# # kubectl create secret generic docker-config-secret --from-file=/path/to/.docker/config.json -n argo
-# apiVersion: argoproj.io/v1alpha1
-# kind: WorkflowTemplate
-# metadata:
-#   name: build-push-wf-template
-# spec:
-#   templates:
-#     - name: build-and-push
-#       inputs:
-#         artifacts:
-#         - name: source
-#           path: /tmp/source
-#       volumes:
-#         - name: docker-config-secret
-#           secret:
-#             secretName: docker-config-secret
-#       container:
-#         readinessProbe:
-#           exec:
-#             command: [ sh, -c, "buildctl debug workers" ]
-#         image: moby/buildkit:v0.9.3-rootless
-#         volumeMounts:
-#           - name: docker-config-secret
-#             mountPath: /.docker
-#         workingDir: /tmp/source/v17-combining-argo-tools/app
-#         env:
-#           - name: BUILDKITD_FLAGS
-#             value: --oci-worker-no-process-sandbox
-#           - name: DOCKER_CONFIG
-#             value: /.docker
-#         command:
-#           - buildctl-daemonless.sh
-#         args:
-#           - build
-#           - --frontend
-#           - dockerfile.v0
-#           - --local
-#           - context=.
-#           - --local
-#           - dockerfile=.
-#           - --output
-#           - type=image,name={{workflow.parameters.nexus-registry}}/nginx:{{workflow.uid}},push=true,registry.insecure=true
-#         securityContext:
-#           privileged: true
-
-
-
+# First of all, use the below command to create docker-config-secret for pushing images to your private registry
+# kubectl create secret generic docker-config-secret --from-file=/path/to/.docker/config.json -n argo
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
@@ -55,52 +9,28 @@ spec:
     - name: build-and-push
       inputs:
         artifacts:
-          - name: source
-            path: /tmp/source
-
+        - name: source
+          path: /tmp/source
       volumes:
         - name: docker-config-secret
           secret:
             secretName: docker-config-secret
-
-        - name: buildkit-state
-          emptyDir: {}
-
       container:
-        image: moby/buildkit:v0.22.0-rootless
-
-        workingDir: /tmp/source/v17-combining-argo-tools/app
-
-        securityContext:
-          privileged: true
-
         readinessProbe:
           exec:
-            command:
-              - sh
-              - -c
-              - buildctl debug workers
-
-        env:
-          - name: BUILDKITD_FLAGS
-            value: --oci-worker-no-process-sandbox
-
-          - name: DOCKER_CONFIG
-            value: /.docker
-
-          - name: XDG_RUNTIME_DIR
-            value: /tmp/buildkit
-
+            command: [ sh, -c, "buildctl debug workers" ]
+        image: moby/buildkit:v0.9.3-rootless
         volumeMounts:
           - name: docker-config-secret
             mountPath: /.docker
-
-          - name: buildkit-state
-            mountPath: /tmp/buildkit
-
+        workingDir: /tmp/source/v17-combining-argo-tools/app
+        env:
+          - name: BUILDKITD_FLAGS
+            value: --oci-worker-no-process-sandbox
+          - name: DOCKER_CONFIG
+            value: /.docker
         command:
           - buildctl-daemonless.sh
-
         args:
           - build
           - --frontend
@@ -111,3 +41,80 @@ spec:
           - dockerfile=.
           - --output
           - type=image,name={{workflow.parameters.nexus-registry}}/nginx:{{workflow.uid}},push=true,registry.insecure=true
+        securityContext:
+          privileged: true
+
+
+
+# apiVersion: argoproj.io/v1alpha1          #এই YAML কোন API group/version অনুযায়ী লেখা — Argo Workflows-এর CRD ভার্সন।
+# kind: WorkflowTemplate                    #এটা একটা reusable টেম্পলেট (একবার বানিয়ে রাখলে একাধিক Workflow থেকে কল করা যায়, ফাংশনের মতো)।
+# metadata:                                 #মেটাডেটা সেকশন শুরু — নাম, namespace ইত্যাদি এখানে থাকে।
+#   name: build-push-wf-template            #এই WorkflowTemplate-এর নাম — অন্য Workflow এটাকে এই নাম দিয়ে রেফার করবে।
+# spec:                                     #মূল specification শুরু।
+#   templates:                              #এই WorkflowTemplate-এর ভেতরের টাস্ক/স্টেপগুলোর লিস্ট শুরু।
+#     - name: build-and-push                #এই নির্দিষ্ট স্টেপের নাম — এটাকে Workflow থেকে কল করার সময় এই নাম ব্যবহার হবে।
+#       inputs:                             #এই স্টেপ কী ইনপুট নেবে তা ডিফাইন করার সেকশন।
+#         artifacts:                        #ইনপুট আর্টিফ্যাক্ট (ফাইল/কোড) লিস্ট শুরু।
+#           - name: source                  #ইনপুট আর্টিফ্যাক্টের নাম — এটা সাধারণত আগের স্টেপ (যেমন git-clone) থেকে আসা সোর্স কোড।
+#             path: /tmp/source             #এই আর্টিফ্যাক্টটা কন্টেইনারের ভেতরে এই পাথে এক্সট্র্যাক্ট হবে।
+
+#       volumes:                                          #এই স্টেপ কোন Kubernetes volumes ব্যবহার করবে তা ডিফাইন করার সেকশন। kubectl get secrets  kore pabo
+#         - name: docker-config-secret                    #প্রথম ভলিউমের নাম — পরে mount করার সময় এই নাম দিয়ে রেফার হবে।
+#           secret:                                       #এই ভলিউমের সোর্স টাইপ — এটা একটা K8s Secret থেকে আসছে।
+#             secretName: docker-config-secret            #কোন Secret অবজেক্ট থেকে ডেটা নেওয়া হবে — যেখানে registry login credential আছে।
+
+#         - name: buildkit-state                          #দ্বিতীয় ভলিউমের নাম।
+#           emptyDir: {}                                  #টেম্পোরারি খালি ডিরেক্টরি — পড চলাকালীন ডেটা থাকবে, পড মুছে গেলে উবে যাবে। BuildKit-এর রানটাইম state/cache রাখার জন্য।
+
+#       container:                                        #মূল কন্টেইনার স্পেক শুরু — যেটা আসল কাজ করবে।
+#         image: moby/buildkit:v0.22.0-rootless           #কোন ইমেজ ব্যবহার হবে — BuildKit-এর rootless ভ্যারিয়েন্ট (root প্রিভিলেজ ছাড়াই বিল্ড করতে পারে, সিকিউরিটির জন্য ভালো)।
+
+#         workingDir: /tmp/source/v17-combining-argo-tools/app      #কন্টেইনারের ভেতরে কমান্ড রান হওয়ার সময় কোন ডিরেক্টরিতে থাকবে — এখানেই Dockerfile আছে।
+
+#         securityContext:                              #সিকিউরিটি-সংক্রান্ত সেটিংস শুরু।
+#           privileged: true                            #প্রিভিলেজড মোডে রান হচ্ছে — rootless BuildKit-এর image build/snapshot অপারেশনের (mount/namespace) জন্য এটা সাধারণত লাগে।
+
+#         readinessProbe:                               #কন্টেইনার "Ready" কিনা চেক করার মেকানিজম শুরু।
+#           exec:                                       #চেক করার পদ্ধতি — কন্টেইনারের ভেতরে একটা কমান্ড রান করে যাচাই হবে।
+#             command:                                  #সেই কমান্ডের লিস্ট।
+#               - sh                                    #শেল invoke করা হচ্ছে।
+#               - -c                                    #শেলকে বলা হচ্ছে পরের স্ট্রিংটা একটা কমান্ড হিসেবে রান করতে।
+#               - buildctl debug workers                #আসল চেক — BuildKit ডেমন রেডি ও worker লিস্ট করতে পারছে কিনা; সাকসেস হলে কন্টেইনার "Ready" ধরা হবে।
+
+#         env:                                            #এনভায়রনমেন্ট ভ্যারিয়েবল লিস্ট শুরু।
+#           - name: BUILDKITD_FLAGS                       #প্রথম env var — BuildKit ডেমনে এক্সট্রা ফ্ল্যাগ পাস করে।
+#             value: --oci-worker-no-process-sandbox      #process sandboxing বন্ধ — কনস্ট্রেইন্ড K8s এনভায়রনমেন্টে (seccomp/syscall রেস্ট্রিকশনের কারণে) rootless মোডে এটা প্রায়ই দরকার হয়।
+
+#           - name: DOCKER_CONFIG                         #দ্বিতীয় env var — registry credential (config.json) কোথায় খুঁজবে তা বলে দেয়।
+#             value: /.docker                             #সেই credential ফাইল এই পাথে পাওয়া যাবে বলে এক্সপেক্ট করা হচ্ছে (নিচে mount করা)।
+
+#           - name: XDG_RUNTIME_DIR           #তৃতীয় env var — rootless প্রসেসের রানটাইম সকেট/টেম্প ফাইল কোথায় রাখবে তা নির্ধারণ করে (rootless কন্টেইনারে এই var সেট করা প্রায় বাধ্যতামূলক)।
+#             value: /tmp/buildkit            #সেই রানটাইম ডিরেক্টরির পাথ — emptyDir ভলিউম থেকে mount করা।
+
+#         volumeMounts:                       #উপরে ডিফাইন করা volumes কোথায় mount হবে তা নির্ধারণ শুরু।
+#           - name: docker-config-secret      #কোন ভলিউম mount হচ্ছে — উপরের volumes-এর নাম রেফারেন্স।
+#             mountPath: /.docker             #Secret ভলিউমটা /.docker-এ mount হবে — push করার সময় registry login লাগবে।
+
+#           - name: buildkit-state            #দ্বিতীয় mount — emptyDir ভলিউম রেফারেন্স।
+#             mountPath: /tmp/buildkit        #/tmp/buildkit-এ mount — BuildKit-এর রানটাইম state/socket রাখার জন্য (XDG_RUNTIME_DIR-এর সাথে মিলে যায়)।
+
+#         command:                            #কন্টেইনার স্টার্ট হওয়ার সময় কোন কমান্ড (entrypoint override) চলবে।
+#           - buildctl-daemonless.sh          #একটা স্ক্রিপ্ট, যেটা একসাথে BuildKit ডেমন চালু করে আর তার উপর ক্লায়েন্ট কমান্ড রান করে — আলাদা করে ডেমন রান করার দরকার নেই ("daemonless" এই অর্থেই)।
+
+#         args:                                #উপরের কমান্ডে পাস হওয়া আর্গুমেন্ট লিস্ট শুরু।
+#           - build                            #এটা একটা "build" অপারেশন।
+#           - --frontend                       #কোন বিল্ড frontend ব্যবহার হবে তা নির্ধারণের ফ্ল্যাগ।
+#           - dockerfile.v0                    #frontend-এর ভ্যালু — Dockerfile সিনট্যাক্স parse করার BuildKit frontend।
+#           - --local                          #লোকাল ফাইলসিস্টেম থেকে একটা নামড সোর্স দেওয়ার ফ্ল্যাগ।
+#           - context=.                        #বিল্ড context — current directory (workingDir-এ সেট করা /tmp/source/.../app)।
+#           - --local                         #আরেকটা লোকাল নামড সোর্স দেওয়ার ফ্ল্যাগ (দ্বিতীয়বার, ভিন্ন নামের জন্য)।
+#           - dockerfile=.                    #Dockerfile কোথায় পাওয়া যাবে — এই একই ডিরেক্টরিতে।
+#           - --output                        #বিল্ডের আউটপুট কী হবে ও কোথায় যাবে তা নির্ধারণের ফ্ল্যাগ।
+#           - type=image,name={{workflow.parameters.nexus-registry}}/nginx:{{workflow.uid}},push=true,registry.insecure=true
+
+# type=image → আউটপুট একটা container image হবে।
+# name=... → ইমেজের নাম, ডায়নামিক্যালি তৈরি: {{workflow.parameters.nexus-registry}} হলো Workflow-এ পাস করা parameter (Nexus registry endpoint), /nginx ইমেজের নাম, 
+# :{{workflow.uid}} ট্যাগ — প্রতি রানে Argo যে ইউনিক ID জেনারেট করে, তা দিয়ে ট্যাগ হয় (ওভাররাইট এড়াতে)।
+# push=true → বিল্ড শেষে সাথে সাথে রেজিস্ট্রিতে push হবে।
+# registry.insecure=true → Nexus registry প্লেইন HTTP-তে চলছে, তাই BuildKit-কে এই insecure কানেকশন accept করতে 
+# বলা হচ্ছে (Docker daemon-এ আগে যেমন insecure-registries সেট করেছিলেন, একই কনসেপ্ট)।

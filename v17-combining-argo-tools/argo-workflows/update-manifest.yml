@@ -46,3 +46,103 @@ spec:
           git commit -m "image.tag has been changed to {{workflow.uid}}" || true
 
           git push origin {{workflow.parameters.branch}}
+
+
+# apiVersion: argoproj.io/v1alpha1   # Argo Workflows-এর কোন API group/version অনুযায়ী এই অবজেক্ট লেখা
+# kind: WorkflowTemplate   # অবজেক্টের ধরন — reusable টেম্পলেট, বারবার কল করা যায়
+# metadata:   # মেটাডেটা সেকশন শুরু
+#   name: update-manifest-wf-template   # এই WorkflowTemplate-এর নাম, এই নামেই Workflow থেকে কল হবে
+
+# spec:   # মূল specification শুরু
+#   templates:   # ভেতরের স্টেপগুলোর লিস্ট শুরু
+#     - name: update-manifest   # এই স্টেপের নাম
+
+#       inputs:   # এই স্টেপ কী ইনপুট নেবে তা ডিফাইন করার সেকশন
+#         artifacts:   # ইনপুট আর্টিফ্যাক্ট লিস্ট শুরু
+#           - name: source   # আগের "clone-repo" স্টেপ থেকে আসা সোর্স কোড আর্টিফ্যাক্টের নাম
+#             path: /tmp/source   # সেই আর্টিফ্যাক্ট এই কন্টেইনারের ভেতরে এই পাথে এক্সট্র্যাক্ট হবে
+
+#       volumes:   # এই স্টেপ কোন Kubernetes volume ব্যবহার করবে তা ডিফাইন করার সেকশন
+#         - name: github-cred   # ভলিউমের নাম — পরে mount করার সময় এই নাম দিয়ে রেফার হবে
+#           secret:   # ভলিউমের সোর্স টাইপ — একটা K8s Secret থেকে আসছে
+#             secretName: github-cred   # কোন Secret অবজেক্ট থেকে ডেটা নেওয়া হবে (যেখানে GitHub username/token আছে)
+
+#       script:   # এই স্টেপের টাইপ — ইনলাইন শেল স্ক্রিপ্ট রান হবে
+#         image: alpine/git   # ব্যবহৃত ইমেজ — lightweight Alpine, যাতে আগে থেকেই git ইনস্টল করা আছে
+#         workingDir: /tmp/source/v17-combining-argo-tools/argo-rollouts   # কমান্ড রান হওয়ার সময় কন্টেইনার এই ডিরেক্টরিতে থাকবে — এখানেই manifest ফাইল (nginx-rollouts.yml) আছে
+#         command: [sh]   # নিচের source ব্লকটা shell দিয়ে রান হবে
+#         volumeMounts:   # উপরে ডিফাইন করা volume কোথায় mount হবে
+#           - name: github-cred   # উপরের volumes-এর নাম রেফারেন্স
+#             mountPath: /secret   # Secret-টা এই পাথে mount হবে, ভেতরে username ও token নামে ফাইল হিসেবে পাওয়া যাবে
+#         source: |   # মূল স্ক্রিপ্ট কন্টেন্ট শুরু (multi-line block)
+#           sed -i 's|image:.*|image: {{workflow.parameters.nexus-registry}}/nginx:{{workflow.uid}}|' nginx-rollouts.yml
+#           # nginx-rollouts.yml ফাইলে "image:" দিয়ে শুরু হওয়া লাইন খুঁজে, সেটাকে নতুন ইমেজ পাথ (Nexus registry + workflow.uid ট্যাগ) দিয়ে রিপ্লেস করছে 
+#           # — -i মানে in-place এডিট, ফাইলেই সরাসরি সেভ হচ্ছে
+
+#           git config --global user.name "nuruzzaman24x"
+#           # commit করার জন্য Git-কে author নাম বলে দেওয়া হচ্ছে (Git কমিট ছাড়া identity ছাড়া কাজ করে না)
+
+#           git config --global user.email "nuruzzamanmd85@gmail.com"
+#           # author ইমেইলও সেট করা হচ্ছে — উপরের নামের সাথে এটাও দরকারি
+
+#           USERNAME=$(cat /secret/username)
+#           # mount করা Secret থেকে username ফাইলের কন্টেন্ট পড়ে একটা শেল ভ্যারিয়েবলে রাখা হচ্ছে
+
+#           TOKEN=$(cat /secret/token)
+#           # Secret থেকে token (GitHub Personal Access Token) পড়ে শেল ভ্যারিয়েবলে রাখা হচ্ছে
+
+#           git remote set-url origin https://${USERNAME}:${TOKEN}@github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git
+#           # origin remote-এর URL পরিবর্তন করে তার ভেতরে username:token বসিয়ে দেওয়া হচ্ছে, যাতে push করার সময় ইন্টারেক্টিভ লগইন প্রম্পট না আসে (token-based authentication)
+
+#           git add .
+#           # সব পরিবর্তিত ফাইল (sed দিয়ে এডিট হওয়া nginx-rollouts.yml) staging-এ যুক্ত করা হচ্ছে
+
+#           git commit -m "image.tag has been changed to {{workflow.uid}}" || true
+#           # পরিবর্তনটা commit করা হচ্ছে, মেসেজে নতুন ট্যাগ উল্লেখ করে; "|| true" দেওয়া আছে যাতে commit করার মতো কিছু না থাকলেও (যেমন কোনো পরিবর্তন না হলে) স্ক্রিপ্ট error দিয়ে আটকে না যায়
+
+#           git push origin {{workflow.parameters.branch}}
+#           # পরিবর্তনটা Git-এ পুশ করা হচ্ছে, কোন ব্রাঞ্চে যাবে সেটা Workflow parameter থেকে ডায়নামিক্যালি আসছে — push হওয়ার পর ArgoCD এই পরিবর্তন দেখে অটো-সিঙ্ক/ডিপ্লয় করবে
+
+
+# # ১. sed
+# # এটা একটা লিনাক্স কমান্ড-লাইন টুল, পুরো নাম "Stream EDitor"। এটার কাজ হলো টেক্সট ফাইলের ভেতরে নির্দিষ্ট pattern খুঁজে বের করে সেটাকে অন্য কিছু দিয়ে replace করা।
+
+# # ২. -i
+# # এই ফ্ল্যাগ মানে "in-place" — অর্থাৎ আউটপুট স্ক্রিনে প্রিন্ট না করে, সরাসরি মূল ফাইলটাকেই এডিট করে সেভ করে দেওয়া। এটা না দিলে sed শুধু পরিবর্তিত কন্টেন্ট টার্মিনালে দেখাতো, ফাইল আপডেট হতো না।
+
+# # ৩. '...' (পুরো কোটেশনের ভেতরের অংশ)
+# # সিঙ্গেল কোটের ভেতরে যেটা আছে, সেটাই sed-এর "কমান্ড/ইন্সট্রাকশন" — কী খুঁজবে আর কী দিয়ে বদলাবে তার সম্পূর্ণ নির্দেশনা।
+
+# # ৪. s
+# # এটা sed-এর একটা সাব-কমান্ড, যার মানে "substitute" (বদলি/বিকল্প/প্রতিস্থাপন করো)। এটাই বলে দেয় আমরা find & replace করতে চাই।
+
+# # ৫. | (প্রথম পাইপ চিহ্ন)
+# # এটা একটা ডেলিমিটার (বিভাজক চিহ্ন) — সাধারণত sed-এ ডেলিমিটার হয় /  jemon   %s/abc/xyz/g কিন্তু এখানে যেহেতু রিপ্লেসমেন্ট টেক্সটের ভেতরেই / আছে (যেমন nexus-registry}}/nginx), তাই /-কে ডেলিমিটার রাখলে কনফিউশন হতো। সেই কারণে | কে ডেলিমিটার বানানো হয়েছে — এটা একটা কমন ট্রিক যখন রিপ্লেসমেন্ট টেক্সটে স্ল্যাশ থাকে।
+
+# # ৬. image:.*
+# # এটা হলো সার্চ প্যাটার্ন (regex) — কী খুঁজছি।
+
+# # image: → এই আক্ষরিক টেক্সটটা খুঁজছে (ফাইলের ভেতরে যেই লাইনে image: লেখা আছে)
+# # . → regex-এ এর মানে "যেকোনো একটা character"
+# # * → এর আগের জিনিসটা "শূন্য বা তার বেশিবার" থাকতে পারে , তাহলে .* মিলিতভাবে মানে "এর পরে যা কিছুই থাকুক, যত characterই থাকুক" — মানে পুরো লাইনের বাকি অংশ (যেমন image: old-registry/nginx:v1) পুরোটাই ম্যাচ হবে।
+# # ৭. | (দ্বিতীয় পাইপ চিহ্ন)
+# # সার্চ প্যাটার্ন আর রিপ্লেসমেন্ট টেক্সটের মাঝে বিভাজক — বলছে "এখানে সার্চ-পার্ট শেষ, রিপ্লেস-পার্ট শুরু"।
+
+# # ৮. image: (রিপ্লেসমেন্টের শুরু)
+# # নতুন লাইনে আক্ষরিকভাবে image: লেখা হবে — কোলনের পরে একটা স্পেস দেওয়া আছে (YAML ফরম্যাটে এটা জরুরি)।
+
+# # ৯. {{workflow.parameters.nexus-registry}}
+# # এটা Argo Workflows-এর একটা টেমপ্লেট ভ্যারিয়েবল — sed রান হওয়ার আগেই Argo এটাকে রিয়েল ভ্যালুতে (যেমন 172.17.0.232:5000) রিপ্লেস করে দেয়। মানে sed যখন আসলে রান হয়, তখন সে এই {{...}} সিনট্যাক্স দেখেই না, একটা আসল IP/host দেখে।
+
+# # ১০. /nginx
+# # আক্ষরিক টেক্সট — registry-র পরে ইমেজের নাম "nginx" জুড়ে দেওয়া হচ্ছে।
+
+# # ১১. :{{workflow.uid}}
+
+# # : → ইমেজ নামের পরে ট্যাগ আলাদা করার জন্য কোলন (Docker-এর নিয়ম: name:tag)
+# # {{workflow.uid}} → আরেকটা Argo ভ্যারিয়েবল, যেটা প্রতিটা Workflow রান-এর জন্য Argo নিজেই একটা ইউনিক ID জেনারেট করে দেয় — এটাই ইমেজের ট্যাগ হিসেবে বসছে, যাতে প্রতিবার নতুন ও আলাদা ট্যাগ হয়।
+# # ১২. | (তৃতীয়/শেষ পাইপ চিহ্ন)
+# # রিপ্লেসমেন্ট টেক্সট শেষ — এটাই s কমান্ডের সমাপ্তি চিহ্ন।
+
+# # ১৩. nginx-rollouts.yml
+# # এটাই টার্গেট ফাইল — কোন ফাইলের ভেতরে find & replace করা হবে। (-i ফ্ল্যাগের কারণে এই ফাইলটাই সরাসরি এডিট হয়ে যাবে।)
