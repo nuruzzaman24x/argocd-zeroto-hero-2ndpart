@@ -1,51 +1,117 @@
-# # First of all, use the below command to create docker-config-secret for pushing images to your private registry
-# # kubectl create secret generic docker-config-secret --from-file=/path/to/.docker/config.json -n argo
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+# First of all, use the below command to create docker-config-secret for pushing images to your private registry
+# এই কমান্ট লাইন বলছে — registry তে image push করার আগে একটা secret বানাতে হবে যেখানে docker login credentials থাকবে
+
+# kubectl create secret generic docker-config-secret --from-file=/path/to/.docker/config.json -n argo
+# এই কমান্ডটা একটা Kubernetes secret তৈরি করে, যার নাম "docker-config-secret"
+# এটা তোমার local .docker/config.json ফাইল (যেখানে registry login info থাকে) থেকে নেওয়া হবে
+# এবং এই secret "argo" namespace এ তৈরি হবে
+
+apiVersion: argoproj.io/v1alpha1   # Argo Workflows-এর API version ব্যবহার হচ্ছে
+kind: WorkflowTemplate              # এই resource-টা একটা reusable WorkflowTemplate, যেটা অন্য Workflow থেকে call করা যাবে
 metadata:
-  name: build-push-wf-template
+  name: build-push-wf-template       # এই WorkflowTemplate-এর নাম, যেটা দিয়ে এটাকে reference করা যাবে
 
 spec:
-  templates:
-    - name: build-and-push
+  templates:                         # এই WorkflowTemplate-এর ভেতরে যত template (step) define করা আছে তার লিস্ট
+    - name: build-and-push           # প্রথম template-এর নাম "build-and-push" — এটা image build আর push করার কাজ করবে
 
-      inputs:
+      inputs:                        # এই template কী input নেবে তা define করা হচ্ছে
         artifacts:
-          - name: source
-            path: /tmp/source
+          - name: source              # input artifact-এর নাম "source" (আগের step যেমন clone-repo থেকে আসা source code)
+            path: /tmp/source          # এই artifact পড়ে container-এর ভিতরে /tmp/source path-এ রাখা হবে
 
-      volumes:
-        - name: docker-config-secret
+      volumes:                       # Pod-এ যেসব volume mount করা হবে তার লিস্ট
+        - name: docker-config-secret  # volume-এর নাম "docker-config-secret"
           secret:
-            secretName: docker-config-secret
+            secretName: docker-config-secret   # উপরে তৈরি করা Kubernetes secret-টা এখানে volume হিসেবে ব্যবহার হচ্ছে
 
-      container:
-        image: moby/buildkit:v0.22.0
+      container:                     # মূল container definition, যেটা actual build কাজ করবে
+        image: moby/buildkit:v0.22.0  # BuildKit-এর normal (non-rootless) image ব্যবহার হচ্ছে, যেটা root হিসেবে চলে
 
         command:
-          - buildctl-daemonless.sh
+          - buildctl-daemonless.sh    # এই script buildkitd daemon এবং buildctl ক্লায়েন্ট দুটোই একসাথে চালায় (daemonless mode)
 
-        args:
-          - build
+        args:                         # buildctl কমান্ডে যেসব argument পাঠানো হবে
+          - build                     # "build" সাবকমান্ড — ইমেজ বিল্ড শুরু করবে
           - --frontend
-          - dockerfile.v0
+          - dockerfile.v0              # frontend হিসেবে standard Dockerfile সিনট্যাক্স ব্যবহার হচ্ছে (dockerfile.v0)
 
           - --local
-          - context=/tmp/source/v17-combining-argo-tools/app
+          - context=/tmp/source/v17-combining-argo-tools/app   
+          # build context (যেখানে Dockerfile আর সোর্স ফাইল আছে) এই path থেকে নেওয়া হবে
 
           - --local
-          - dockerfile=/tmp/source/v17-combining-argo-tools/app
+          - dockerfile=/tmp/source/v17-combining-argo-tools/app   
+          # Dockerfile কোথায় খুঁজে পাবে সেটাও একই path-এ বলা হচ্ছে
 
           - --output
           - type=image,name={{workflow.parameters.nexus-registry}}/nginx:{{workflow.uid}},push=true,registry.insecure=true
+          # Output টা একটা image হবে
+          # name: registry address (workflow parameter থেকে আসছে) + "/nginx:" + workflow-এর unique ID (uid) — এটাই image tag হবে
+          # push=true মানে build শেষে image সরাসরি registry-তে push হবে
+          # registry.insecure=true মানে এই registry HTTPS/TLS verified না (insecure/HTTP registry), তাই insecure flag দিতে হচ্ছে
 
-        env:
+        env:                          # Container-এর ভিতরে environment variable সেট করা হচ্ছে
           - name: DOCKER_CONFIG
-            value: /.docker
+            value: /.docker            # DOCKER_CONFIG ভ্যারিয়েবল বলে দিচ্ছে docker config (credentials) কোথায় খুঁজবে — /.docker path এ
 
-        volumeMounts:
+        volumeMounts:                 # উপরে define করা volume container-এর ভিতরে কোন path-এ mount হবে
           - name: docker-config-secret
-            mountPath: /.docker
+            mountPath: /.docker        # docker-config-secret volume টা /.docker path-এ mount হচ্ছে, যাতে DOCKER_CONFIG env ভ্যারিয়েবল ওটা খুঁজে পায়
 
         securityContext:
-          privileged: true
+          privileged: true             # Container টা privileged mode-এ চলবে — BuildKit-এর image building (kernel-level operations যেমন mount, namespace ব্যবহার) এর জন্য এটা দরকার
+
+
+
+# # # First of all, use the below command to create docker-config-secret for pushing images to your private registry
+# # # kubectl create secret generic docker-config-secret --from-file=/path/to/.docker/config.json -n argo
+# apiVersion: argoproj.io/v1alpha1
+# kind: WorkflowTemplate
+# metadata:
+#   name: build-push-wf-template
+
+# spec:
+#   templates:
+#     - name: build-and-push
+
+#       inputs:
+#         artifacts:
+#           - name: source
+#             path: /tmp/source
+
+#       volumes:
+#         - name: docker-config-secret
+#           secret:
+#             secretName: docker-config-secret
+
+#       container:
+#         image: moby/buildkit:v0.22.0
+
+#         command:
+#           - buildctl-daemonless.sh
+
+#         args:
+#           - build
+#           - --frontend
+#           - dockerfile.v0
+
+#           - --local
+#           - context=/tmp/source/v17-combining-argo-tools/app
+
+#           - --local
+#           - dockerfile=/tmp/source/v17-combining-argo-tools/app
+
+#           - --output
+#           - type=image,name={{workflow.parameters.nexus-registry}}/nginx:{{workflow.uid}},push=true,registry.insecure=true
+
+#         env:
+#           - name: DOCKER_CONFIG
+#             value: /.docker
+
+#         volumeMounts:
+#           - name: docker-config-secret
+#             mountPath: /.docker
+
+#         securityContext:
+#           privileged: true
