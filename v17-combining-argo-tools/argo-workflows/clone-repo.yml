@@ -1,35 +1,16 @@
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
-metadata:
-  name: clone-repo-wf-template
-spec:
-  templates:
-    - name: clone-repo
-      outputs:
-        artifacts:
-        - name: source
-          path: /tmp/source
-      script:
-        image: alpine/git
-        command: [sh]
-        source: |
-          git clone {{workflow.parameters.repo-url}} /tmp/source
-
-
-
-# apiVersion: argoproj.io/v1alpha1   # কোন API group/version অনুযায়ী এই অবজেক্ট লেখা — Argo Workflows-এর CRD ভার্সন
-# kind: WorkflowTemplate   # অবজেক্টের ধরন — এটা একটা reusable টেম্পলেট, বারবার কল করা যায়
-# metadata:   # অবজেক্টের নাম/namespace ইত্যাদি মেটাডেটা সেকশন শুরু
-#   name: clone-repo-wf-template   # এই WorkflowTemplate-এর নাম, অন্য Workflow এই নাম দিয়ে এটাকে রেফার করবে
-# spec:   # মূল specification (আসল কনফিগারেশন) শুরু
-#   templates:   # এই WorkflowTemplate-এর ভেতরের স্টেপগুলোর লিস্ট শুরু
-#     - name: clone-repo   # এই স্টেপের নাম — Workflow থেকে কল করার সময় এই নামেই রেফার হবে
-#       outputs:   # কাজ শেষে এই স্টেপ কী আউটপুট দেবে তা ডিফাইন করার সেকশন
-#         artifacts:   # আউটপুট আর্টিফ্যাক্ট (ফাইল/কোড বান্ডল) লিস্ট শুরু
-#         - name: source   # আউটপুট আর্টিফ্যাক্টের নাম — এই নামেই পরের স্টেপ (build-and-push) এটা ব্যবহার করবে
-#           path: /tmp/source   # কন্টেইনারের ভেতরে এই পাথের কন্টেন্টকেই Argo আর্টিফ্যাক্ট হিসেবে প্যাকেজ করে রাখবে
-#       script:   # এই স্টেপের টাইপ "script" — মানে একটা ছোট ইনলাইন স্ক্রিপ্ট রান হবে (আলাদা Dockerfile/command-args লাগবে না)
-#         image: alpine/git   # কোন ইমেজ ব্যবহার হবে — lightweight Alpine Linux, যাতে আগে থেকেই git ইনস্টল করা আছে
-#         command: [sh]   # কন্টেইনার চালু হলে কোন ইন্টারপ্রেটার দিয়ে নিচের script রান হবে — সাধারণ shell
-#         source: |   # আসল স্ক্রিপ্ট কন্টেন্ট এখান থেকে শুরু (multi-line string ব্লক)
-#           git clone {{workflow.parameters.repo-url}} /tmp/source   # মূল কাজ — Workflow-এ পাস করা repo-url parameter অনুযায়ী রিপো ক্লোন করে /tmp/source-এ রাখা হচ্ছে (এই পাথ-ই উপরে output artifact হিসেবে নেওয়া হচ্ছে)
+apiVersion: argoproj.io/v1alpha1   # কোন API group/version অনুযায়ী এই অবজেক্ট লেখা — Argo Workflows-এর CRD ভার্সন
+kind: WorkflowTemplate   # অবজেক্টের ধরন — এটা একটা reusable টেম্পলেট, বারবার কল করা যায়
+metadata:   # অবজেক্টের নাম/namespace ইত্যাদি মেটাডেটা সেকশন শুরু
+  name: clone-repo-wf-template   # এই WorkflowTemplate-এর নাম, অন্য Workflow এই নাম দিয়ে এটাকে রেফার করবে
+spec:   # মূল specification (আসল কনফিগারেশন) শুরু
+  templates:   # এই WorkflowTemplate-এর ভেতরের স্টেপগুলোর লিস্ট শুরু
+    - name: clone-repo   # এই স্টেপের নাম — Workflow থেকে কল করার সময় এই নামেই রেফার হবে
+      outputs:   # কাজ শেষে এই স্টেপ কী আউটপুট দেবে তা ডিফাইন করার সেকশন
+        artifacts:   # আউটপুট আর্টিফ্যাক্ট (ফাইল/কোড বান্ডল) লিস্ট শুরু
+        - name: source   # আউটপুট আর্টিফ্যাক্টের নাম — এই নামেই পরের স্টেপ (build-and-push) এটা ব্যবহার করবে
+          path: /tmp/source   # কন্টেইনারের ভেতরে এই পাথের কন্টেন্টকেই Argo আর্টিফ্যাক্ট হিসেবে প্যাকেজ করে রাখবে
+      script:   # এই স্টেপের টাইপ "script" — মানে একটা ছোট ইনলাইন স্ক্রিপ্ট রান হবে (আলাদা Dockerfile/command-args লাগবে না)
+        image: alpine/git   # কোন ইমেজ ব্যবহার হবে — lightweight Alpine Linux, যাতে আগে থেকেই git ইনস্টল করা আছে
+        command: [sh]   # কন্টেইনার চালু হলে কোন ইন্টারপ্রেটার দিয়ে নিচের script রান হবে — সাধারণ shell
+        source: |   # আসল স্ক্রিপ্ট কন্টেন্ট এখান থেকে শুরু (multi-line string ব্লক)
+          git clone {{workflow.parameters.repo-url}} /tmp/source   # মূল কাজ — Workflow-এ পাস করা repo-url parameter অনুযায়ী রিপো ক্লোন করে /tmp/source-এ রাখা হচ্ছে (এই পাথ-ই উপরে output artifact হিসেবে নেওয়া হচ্ছে)

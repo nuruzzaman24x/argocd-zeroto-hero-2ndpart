@@ -1,17 +1,36 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: nginx-ingress
-spec:
-  ingressClassName: nginx
-  rules:
-  - host: rolling-update.demo
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: nginx-service
-            port:
-              number: 8080
+apiVersion: networking.k8s.io/v1   # এই অবজেক্ট Kubernetes-এর কোর networking API group থেকে — Argo-নির্দিষ্ট না, এটা স্ট্যান্ডার্ড K8s রিসোর্স
+kind: Ingress   # অবজেক্টের ধরন — Ingress, যা বাইরের HTTP/HTTPS ট্রাফিককে hostname/path অনুযায়ী ক্লাস্টারের ভেতরের Service-এ রুট করে
+metadata:   # মেটাডেটা সেকশন শুরু
+  name: nginx-ingress   # এই Ingress অবজেক্টের নাম
+spec:   # মূল specification শুরু
+  ingressClassName: nginx   # কোন Ingress Controller এই রুলগুলো হ্যান্ডেল করবে তা বলে দিচ্ছে — ক্লাস্টারে একাধিক controller (nginx, traefik ইত্যাদি) থাকতে পারে, এখানে স্পেসিফিক্যালি "nginx" controller-কে বেছে নেওয়া হয়েছে
+  rules:   # রাউটিং রুলের লিস্ট শুরু
+  - host: rolling-update.demo   # প্রথম রুল — শুধু তখনই অ্যাপ্লাই হবে যখন আসা রিকোয়েস্টের Host header ঠিক "rolling-update.demo" হবে (virtual host-এর মতো কাজ করে)
+    http:   # এই রুলটা HTTP ট্রাফিকের জন্য প্রযোজ্য
+      paths:   # এই host-এর জন্য path-ভিত্তিক রুটিং রুলের লিস্ট শুরু
+      - path: /   # ম্যাচ করার URL path — root ("/")
+        pathType: Prefix   # path ম্যাচিং কীভাবে হবে — "Prefix" মানে "/" দিয়ে শুরু হওয়া সবকিছুই (যেমন /, /about, /api) এই রুলে ম্যাচ করবে
+        backend:   # ম্যাচ হওয়া ট্রাফিক কোথায় পাঠানো হবে তার সেকশন
+          service:   # backend টাইপ — একটা Kubernetes Service
+            name: nginx-service   # কোন Service-এ ট্রাফিক পাঠানো হবে — এটাই সেই Service, যেটা Argo Rollouts দিয়ে ম্যানেজ হওয়া nginx পডগুলোর সামনে আছে
+            port:   # সেই Service-এর কোন পোর্টে পাঠানো হবে
+              number: 8080   # পোর্ট নাম্বার — 8080
+
+
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: nginx-ingress
+# spec:
+#   ingressClassName: nginx
+#   rules:
+#   - host: rolling-update.demo
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: nginx-service
+#             port:
+#               number: 8080
