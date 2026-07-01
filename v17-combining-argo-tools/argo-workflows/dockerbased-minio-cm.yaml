@@ -1,3 +1,4 @@
+################# k8s ConfigMap for MinIO artifact repository #################
 # apiVersion: v1    # এই লাইনটি Kubernetes API এর সংস্করণ নির্ধারণ করে, যা এখানে v1 ব্যবহার করা হয়েছে।
 # kind: ConfigMap    # এই লাইনটি Kubernetes object এর প্রকার নির্ধারণ করে, যা এখানে ConfigMap ব্যবহার করা হয়েছে
 # metadata:           # এই লাইনটি Kubernetes object এর মেটাডেটা নির্ধারণ করে, যা এখানে ConfigMap এর নাম এবং অ্যানোটেশন অন্তর্ভুক্ত করে।
@@ -20,24 +21,26 @@
 #         name: n8n-minio-cred          # এই লাইনটি Kubernetes সিক্রেটের নাম নির্ধারণ করে, যা এখানে "n8n-minio-cred" সেট করা হয়েছে।
 #         key: secret-key             # এই লাইনটি Kubernetes সিক্রেটের কী নির্ধারণ
 
-
-
-apiVersion: v1
-kind: ConfigMap
+############# dockerbased-minio-cm.yaml #############
+apiVersion: v1                        # Kubernetes-এর core API version, ConfigMap একটা core resource তাই "v1" ব্যবহার হচ্ছে
+kind: ConfigMap                        # Resource type হলো ConfigMap — এটা key-value configuration data store করার জন্য ব্যবহার হয়
 metadata:
-  name: artifact-repository
-  namespace: argo
+  name: artifact-repository            # এই ConfigMap-এর নাম "artifact-repository" — Argo Workflows এই নির্দিষ্ট নামটাই খোঁজে artifact storage config-এর জন্য
+  namespace: argo                      # এই ConfigMap "argo" namespace-এ তৈরি হবে, কারণ Argo Workflows এই namespace-এ চলছে
   annotations:
     workflows.argoproj.io/default-artifact-repository: minio-artifact-repo
-data:
-  minio-artifact-repo: |
-    s3:
-      bucket: n8n-bucket
-      endpoint: 172.17.0.232:32075
-      insecure: true
+    # এই annotation Argo Workflows-কে বলছে — default artifact repository হিসেবে নিচের "minio-artifact-repo" key-এর config ব্যবহার করো
+    # মানে কোনো workflow-এ আলাদাভাবে artifact location না বললে এই config automatic use হবে
+
+data:                                  # ConfigMap-এর actual data section, এখানে configuration values থাকে
+  minio-artifact-repo: |               # এই key-এর নাম "minio-artifact-repo" — উপরের annotation এই নামটাই reference করেছে, # "|" মানে এটা multi-line string (YAML block scalar), নিচের সব content এই key-এর value
+    s3:                                # Artifact storage type হলো S3-compatible storage (এখানে MinIO ব্যবহার হচ্ছে, যেটা S3 API সাপোর্ট করে)
+      bucket: n8n-bucket               # MinIO-তে যে bucket-এ artifacts (যেমন source code tar, logs) store হবে তার নাম "n8n-bucket"
+      endpoint: 172.17.0.232:32075     # MinIO server-এর address আর port — এটা cluster-এর বাইরে NodePort দিয়ে expose করা MinIO-এর endpoint
+      insecure: true                   # MinIO-এর সাথে connection HTTPS ছাড়া HTTP দিয়ে হবে (TLS certificate নেই বলে insecure: true দেওয়া হয়েছে)
       accessKeySecret:
-        name: n8n-minio-cred
-        key: access-key
+        name: n8n-minio-cred           # MinIO-এর access key কোন Kubernetes Secret-এ আছে তার নাম "n8n-minio-cred"
+        key: access-key                # সেই Secret-এর ভেতরে "access-key" নামের key-তে actual access key value আছে
       secretKeySecret:
-        name: n8n-minio-cred
-        key: secret-key
+        name: n8n-minio-cred           # MinIO-এর secret key ও একই Kubernetes Secret "n8n-minio-cred" থেকে নেওয়া হবে
+        key: secret-key                # সেই Secret-এর ভেতরে "secret-key" নামের key-তে actual secret key value আছে
