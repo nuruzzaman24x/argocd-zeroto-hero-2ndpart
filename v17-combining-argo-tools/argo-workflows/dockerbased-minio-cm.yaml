@@ -26,7 +26,8 @@ apiVersion: v1                        # Kubernetes-এর core API version, Conf
 kind: ConfigMap                        # Resource type হলো ConfigMap — এটা key-value configuration data store করার জন্য ব্যবহার হয়
 metadata:
   name: artifact-repository            # এই ConfigMap-এর নাম "artifact-repository" — Argo Workflows এই নির্দিষ্ট নামটাই খোঁজে artifact storage config-এর জন্য
-  namespace: argo                      # এই ConfigMap "argo" namespace-এ তৈরি হবে, কারণ Argo Workflows এই namespace-এ চলছে
+  namespace: argo-events                      # এই ConfigMap "argo" namespace-এ তৈরি হবে, কারণ Argo Workflows এই namespace-এ চলছে
+  #namespace: argo                      # এই ConfigMap "argo" namespace-এ তৈরি হবে, কারণ Argo Workflows এই namespace-এ চলছে
   annotations:
     workflows.argoproj.io/default-artifact-repository: minio-artifact-repo
     # এই annotation Argo Workflows-কে বলছে — default artifact repository হিসেবে নিচের "minio-artifact-repo" key-এর config ব্যবহার করো

@@ -2,7 +2,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: argo-workflow-role
-  namespace: argo
+  namespace: argo-events
+    #  namespace: argo
 rules:
   - apiGroups: [""]
     resources: ["pods"]
@@ -21,11 +22,13 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: argo-workflow-rolebinding
-  namespace: argo
+  namespace: argo-events
+    #  namespace: argo
 subjects:
   - kind: ServiceAccount
     name: default
-    namespace: argo
+    namespace: argo-events
+      #namespace: argo
 roleRef:
   kind: Role
   name: argo-workflow-role

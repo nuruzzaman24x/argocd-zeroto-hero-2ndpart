@@ -15,22 +15,3 @@ spec:   # মূল specification শুরু
             name: nginx-service   # কোন Service-এ ট্রাফিক পাঠানো হবে — এটাই সেই Service, যেটা Argo Rollouts দিয়ে ম্যানেজ হওয়া nginx পডগুলোর সামনে আছে
             port:   # সেই Service-এর কোন পোর্টে পাঠানো হবে
               number: 8080   # পোর্ট নাম্বার — 8080
-
-
-# apiVersion: networking.k8s.io/v1
-# kind: Ingress
-# metadata:
-#   name: nginx-ingress
-# spec:
-#   ingressClassName: nginx
-#   rules:
-#   - host: rolling-update.demo
-#     http:
-#       paths:
-#       - path: /
-#         pathType: Prefix
-#         backend:
-#           service:
-#             name: nginx-service
-#             port:
-#               number: 8080
