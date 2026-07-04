@@ -1,0 +1,52 @@
+# # github-eventsource.yaml
+# apiVersion: argoproj.io/v1alpha1
+# kind: EventSource
+# metadata:
+#   name: github-eventsource
+#   namespace: argo-events
+# spec:
+#   github:
+#     my-push-event:
+#       owner: "nuruzzaman24x"
+#       repository: "argocd-zeroto-hero-2ndpart"
+#       webhook:
+#         endpoint: /push
+#         port: "12000"
+#         method: POST
+#       events:
+#         - push
+#       webhookSecret:
+#         name: github-webhook-secret
+#         key: secret
+#       insecure: false
+#       active: true
+#       contentType: json
+
+
+
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
+metadata:
+  name: github-eventsource
+  namespace: argo-events
+spec:
+  service:                      # এই block যোগ করো
+    ports:
+      - port: 12000
+        targetPort: 12000
+  github:
+    my-push-event:
+      owner: "nuruzzaman24x"
+      repository: "argocd-zeroto-hero-2ndpart"
+      webhook:
+        endpoint: /push
+        port: "12000"
+        method: POST
+      events:
+        - push
+      webhookSecret:
+        name: github-webhook-secret
+        key: secret
+      insecure: false
+      active: true
+      contentType: json
