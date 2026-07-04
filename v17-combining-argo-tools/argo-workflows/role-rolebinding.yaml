@@ -1,35 +1,73 @@
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: argo-workflow-role
-  namespace: argo-events
-    #  namespace: argo
-rules:
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get", "list", "watch", "update", "patch", "delete", "create"]
-  - apiGroups: [""]
-    resources: ["pods/log"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: [""]
-    resources: ["pods/exec"]
-    verbs: ["create"]
-  - apiGroups: ["argoproj.io"]
-    resources: ["workflows", "workflowtasksets", "workflowtaskresults"]
-    verbs: ["get", "list", "watch", "update", "patch", "create"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: argo-workflow-rolebinding
-  namespace: argo-events
-    #  namespace: argo
-subjects:
-  - kind: ServiceAccount
-    name: default
-    namespace: argo-events
-      #namespace: argo
-roleRef:
-  kind: Role
-  name: argo-workflow-role
-  apiGroup: rbac.authorization.k8s.io
+apiVersion: rbac.authorization.k8s.io/v1    # Kubernetes RBAC API version
+kind: Role                                   # Resource type — namespace-scoped permission define করে
+metadata:                                    # এই Role-এর পরিচয়মূলক তথ্য
+  name: argo-workflow-role                   # Role-এর নাম — নিচে RoleBinding এই নাম দিয়ে reference করবে
+  namespace: argo-events                     # এই Role argo-events namespace-এ কাজ করবে
+    #  namespace: argo                        # আগে argo namespace-এ ছিল — এখন comment করা আছে
+rules:                                       # এই Role-এ কী কী permission থাকবে তার লিস্ট
+  - apiGroups: [""]                          # প্রথম rule — "" মানে Kubernetes-এর core API group (Pod, Service, ConfigMap ইত্যাদি এখানে থাকে)
+    resources: ["pods"]                      # কোন resource-এ permission — pods
+    verbs: ["get", "list", "watch", "update", "patch", "delete", "create"]    # pod দেখা, লিস্ট করা, watch করা, update করা, patch করা, delete করা, তৈরি করা — সব permission
+  - apiGroups: [""]                          # দ্বিতীয় rule — আবার core API group
+    resources: ["pods/log"]                  # pod-এর log দেখার জন্য আলাদা resource
+    verbs: ["get", "list", "watch"]          # শুধু read permission — log শুধু দেখা যাবে, modify করা যাবে না
+  - apiGroups: [""]                          # তৃতীয় rule — core API group
+    resources: ["pods/exec"]                 # pod-এর ভেতরে command execute করার জন্য আলাদা resource
+    verbs: ["create"]                        # exec session শুধু create করা যাবে
+  - apiGroups: ["argoproj.io"]              # চতুর্থ rule — Argo-এর CRD group
+    resources: ["workflows", "workflowtasksets", "workflowtaskresults"]    # Workflow, WorkflowTaskSet (DAG task), WorkflowTaskResult (task output) — এই তিনটা resource-এ permission
+    verbs: ["get", "list", "watch", "update", "patch", "create"]           # দেখা, লিস্ট, watch, update, patch, তৈরি করার permission — workflow চলার সময় এগুলো দরকার হয়
+---                                          # দুটো আলাদা resource একই file-এ — এই --- দিয়ে আলাদা করা হয়েছে
+apiVersion: rbac.authorization.k8s.io/v1    # আবার RBAC API version — এবার RoleBinding-এর জন্য
+kind: RoleBinding                            # Resource type — Role-কে ServiceAccount-এর সাথে connect করে
+metadata:                                    # এই RoleBinding-এর পরিচয়মূলক তথ্য
+  name: argo-workflow-rolebinding            # RoleBinding-এর নাম
+  namespace: argo-events                     # এই RoleBinding argo-events namespace-এ কাজ করবে
+    #  namespace: argo                        # আগে argo namespace-এ ছিল — এখন comment করা আছে
+subjects:                                    # কাকে permission দেওয়া হচ্ছে তার লিস্ট
+  - kind: ServiceAccount                     # যাকে permission দেওয়া হচ্ছে সে একটা ServiceAccount
+    name: default                            # ServiceAccount-এর নাম — argo-events namespace-এর default sa
+    namespace: argo-events                   # সেই ServiceAccount কোন namespace-এ আছে
+      #namespace: argo                        # আগে argo namespace ছিল — এখন comment করা আছে
+roleRef:                                     # কোন Role-এর permission দেওয়া হচ্ছে তার reference
+  kind: Role                                 # reference করা resource-এর type — Role
+  name: argo-workflow-role                   # উপরে তৈরি করা Role-এর নাম
+  apiGroup: rbac.authorization.k8s.io        # Role কোন API group-এ আছে
+
+
+
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: Role
+# metadata:
+#   name: argo-workflow-role
+#   namespace: argo-events
+#     #  namespace: argo
+# rules:
+#   - apiGroups: [""]
+#     resources: ["pods"]
+#     verbs: ["get", "list", "watch", "update", "patch", "delete", "create"]
+#   - apiGroups: [""]
+#     resources: ["pods/log"]
+#     verbs: ["get", "list", "watch"]
+#   - apiGroups: [""]
+#     resources: ["pods/exec"]
+#     verbs: ["create"]
+#   - apiGroups: ["argoproj.io"]
+#     resources: ["workflows", "workflowtasksets", "workflowtaskresults"]
+#     verbs: ["get", "list", "watch", "update", "patch", "create"]
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: RoleBinding
+# metadata:
+#   name: argo-workflow-rolebinding
+#   namespace: argo-events
+#     #  namespace: argo
+# subjects:
+#   - kind: ServiceAccount
+#     name: default
+#     namespace: argo-events
+#       #namespace: argo
+# roleRef:
+#   kind: Role
+#   name: argo-workflow-role
+#   apiGroup: rbac.authorization.k8s.io

@@ -1,25 +1,49 @@
-cat <<EOF | kubectl apply -f -
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: workflow-template-role
-  namespace: argo-events
-rules:
-  - apiGroups: ["argoproj.io"]
-    resources: ["workflows", "workflowtemplates"]
-    verbs: ["create", "get", "list", "watch"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: workflow-template-rolebinding
-  namespace: argo-events
-subjects:
-  - kind: ServiceAccount
-    name: default
-    namespace: argo-events
-roleRef:
-  kind: Role
-  name: workflow-template-role
-  apiGroup: rbac.authorization.k8s.io
-EOF
+apiVersion: rbac.authorization.k8s.io/v1    # Kubernetes-এর RBAC API version — Role Based Access Control এই group-এ থাকে
+kind: Role                                   # Resource type হলো Role — এটা একটা namespace-এর ভেতরে permission define করে
+metadata:                                    # এই Role-এর পরিচয়মূলক তথ্য
+  name: workflow-template-role               # Role-এর নাম — নিচে RoleBinding এই নাম দিয়ে reference করবে
+  namespace: argo-events                     # এই Role শুধু argo-events namespace-এর জন্য কাজ করবে
+rules:                                       # এই Role-এ কী কী permission থাকবে তার লিস্ট
+  - apiGroups: ["argoproj.io"]              # কোন API group-এর resource-এ permission দেওয়া হচ্ছে — argoproj.io মানে Argo-এর সব CRD
+    resources: ["workflows", "workflowtemplates"]    # কোন resource-এ permission দেওয়া হচ্ছে — Workflow আর WorkflowTemplate দুটোতেই
+    verbs: ["create", "get", "list", "watch"]        # কী কী কাজ করতে পারবে — তৈরি করা, দেখা, লিস্ট করা, watch করা
+---                                          # এই --- দিয়ে আলাদা করা হচ্ছে — একই file-এ দুটো আলাদা resource define করা হচ্ছে
+apiVersion: rbac.authorization.k8s.io/v1    # আবার RBAC API version — এবার RoleBinding-এর জন্য
+kind: RoleBinding                            # Resource type হলো RoleBinding — Role-কে কোনো ServiceAccount-এর সাথে connect করে
+metadata:                                    # এই RoleBinding-এর পরিচয়মূলক তথ্য
+  name: workflow-template-rolebinding        # RoleBinding-এর নাম
+  namespace: argo-events                     # এই RoleBinding শুধু argo-events namespace-এ কাজ করবে
+subjects:                                    # কাকে permission দেওয়া হচ্ছে তার লিস্ট
+  - kind: ServiceAccount                     # যাকে permission দেওয়া হচ্ছে সে একটা ServiceAccount
+    name: default                            # ServiceAccount-এর নাম — argo-events namespace-এর default sa
+    namespace: argo-events                   # সেই ServiceAccount কোন namespace-এ আছে
+roleRef:                                     # কোন Role-এর permission দেওয়া হচ্ছে তার reference
+  kind: Role                                 # reference করা resource-এর type — Role (ClusterRole না)
+  name: workflow-template-role               # উপরে তৈরি করা Role-এর নাম
+  apiGroup: rbac.authorization.k8s.io        # Role কোন API group-এ আছে
+
+# cat <<EOF | kubectl apply -f -
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: Role
+# metadata:
+#   name: workflow-template-role
+#   namespace: argo-events
+# rules:
+#   - apiGroups: ["argoproj.io"]
+#     resources: ["workflows", "workflowtemplates"]
+#     verbs: ["create", "get", "list", "watch"]
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: RoleBinding
+# metadata:
+#   name: workflow-template-rolebinding
+#   namespace: argo-events
+# subjects:
+#   - kind: ServiceAccount
+#     name: default
+#     namespace: argo-events
+# roleRef:
+#   kind: Role
+#   name: workflow-template-role
+#   apiGroup: rbac.authorization.k8s.io
+# EOF

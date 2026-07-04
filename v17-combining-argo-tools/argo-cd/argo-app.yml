@@ -1,21 +1,44 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: argo-cicd-livedemo
-  namespace: argocd
-spec:
-  destination:
-    namespace: argo-events
-    # namespace: argo
-    server: https://kubernetes.default.svc
-  project: default
-  source:
-    path: v17-combining-argo-tools/argo-rollouts
-    repoURL: https://github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git
-    targetRevision: main
-  syncPolicy:
-    syncOptions:
-      - CreateNamespace=true
-    automated:
-      prune: true
-      selfHeal: true
+apiVersion: argoproj.io/v1alpha1    # Argo CD-এর API version — এই CRD ArgoCD থেকে আসছে
+kind: Application                   # Resource type হলো Application — ArgoCD এই resource দিয়ে GitOps manage করে
+metadata:                           # এই Application-এর পরিচয়মূলক তথ্য
+  name: argo-cicd-livedemo          # Application-এর নাম — ArgoCD dashboard-এ এই নামে দেখা যাবে
+  namespace: argocd                 # এই Application object argocd namespace-এ থাকবে — ArgoCD সবসময় এই namespace-এ application object রাখে
+spec:                               # মূল configuration শুরু
+  destination:                      # এই application কোথায় deploy হবে তার definition
+    namespace: argo-events          # deploy হওয়া resources কোন namespace-এ যাবে — argo-events namespace-এ
+    # namespace: argo               # আগে argo namespace-এ deploy হতো — এখন comment করা আছে
+    server: https://kubernetes.default.svc    # কোন Kubernetes cluster-এ deploy হবে — এটা same cluster-এর internal address, মানে ArgoCD যে cluster-এ আছে সেখানেই deploy করবে
+  project: default                  # কোন ArgoCD project-এর অধীনে এই application থাকবে — "default" মানে built-in default project
+  source:                           # Git repository থেকে কোথা থেকে manifest নেবে তার definition
+    path: v17-combining-argo-tools/argo-rollouts    # Repository-এর কোন folder-এ manifest files আছে — এই path-এর ভেতরে nginx-rollouts.yml আর nginx-ingress.yml আছে
+    repoURL: https://github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git    # কোন GitHub repository থেকে manifest নেবে
+    targetRevision: main            # কোন branch track করবে — main branch-এর latest commit সবসময় sync হবে
+  syncPolicy:                       # ArgoCD কীভাবে sync করবে তার policy
+    syncOptions:                    # sync-এর বিশেষ options-এর লিস্ট
+      - CreateNamespace=true        # destination namespace না থাকলে automatically তৈরি করবে — argo-events namespace না থাকলেও ArgoCD নিজে বানাবে
+    automated:                      # automatic sync-এর configuration — manually sync করতে হবে না
+      prune: true                   # Git-এ কোনো resource delete হলে cluster থেকেও automatically delete করবে
+      selfHeal: true                # কেউ manually cluster-এ কিছু change করলে ArgoCD আবার Git-এর state-এ ফিরিয়ে আনবে
+
+
+# apiVersion: argoproj.io/v1alpha1
+# kind: Application
+# metadata:
+#   name: argo-cicd-livedemo
+#   namespace: argocd
+# spec:
+#   destination:
+#     namespace: argo-events
+#     # namespace: argo
+#     server: https://kubernetes.default.svc
+#   project: default
+#   source:
+#     path: v17-combining-argo-tools/argo-rollouts
+#     repoURL: https://github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git
+#     targetRevision: main
+#   syncPolicy:
+#     syncOptions:
+#       - CreateNamespace=true
+#     automated:
+#       prune: true
+#       selfHeal: true

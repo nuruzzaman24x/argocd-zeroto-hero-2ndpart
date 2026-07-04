@@ -1,67 +1,137 @@
-# github-sensor.yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Sensor
-metadata:
-  name: github-sensor
-  namespace: argo-events
-spec:
-  serviceAccountName: operate-workflow-sa
+# github-sensor.yaml                                      # এই ফাইলের নাম — GitHub event থেকে workflow trigger করার Sensor
+apiVersion: argoproj.io/v1alpha1                          # Argo Events-এর API version
+kind: Sensor                                              # Resource type হলো Sensor — EventBus থেকে event নিয়ে action নেয়
+metadata:                                                 # এই object-এর পরিচয়মূলক তথ্য
+  name: github-sensor                                     # Sensor-এর নাম
+  namespace: argo-events                                  # কোন namespace-এ এই Sensor থাকবে
+spec:                                                     # মূল configuration শুরু
+  serviceAccountName: operate-workflow-sa                 # Sensor কোন service account দিয়ে চলবে — এই sa-এর workflow create করার permission আছে
 
-  dependencies:
-    - name: github-dep
-      eventSourceName: github-eventsource
-      eventName: my-push-event
+  dependencies:                                           # Sensor কোন event-এর জন্য অপেক্ষা করবে তার লিস্ট
+    - name: github-dep                                    # এই dependency-এর নাম — নিচে triggers-এ এই নাম reference হয়
+      eventSourceName: github-eventsource                 # কোন EventSource থেকে event আসবে — আমাদের github-eventsource
+      eventName: my-push-event                            # সেই EventSource-এর কোন নির্দিষ্ট event শুনবে — github-eventsource-এ এই নামে define করা আছে
 
-  triggers:
-    - template:
-        name: trigger-argo-workflow
-        argoWorkflow:
-          group: argoproj.io
-          version: v1alpha1
-          resource: workflows
-          operation: submit
-          source:
-            resource:
-              apiVersion: argoproj.io/v1alpha1
-              kind: Workflow
-              metadata:
-                generateName: argo-demo-
-                namespace: argo-events
-              spec:
-                arguments:
-                  parameters:
-                    - name: repo-url
-                      value: "https://github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git"
-                    - name: branch
-                      value: "main"
-                    - name: nexus-registry
-                      value: "172.17.0.232:5000"
-                artifactRepositoryRef:
-                  configMap: artifact-repository
-                entrypoint: ci
-                templates:
-                  - name: ci
-                    dag:
-                      tasks:
-                        - name: clone-repo-task
-                          templateRef:
-                            name: clone-repo-wf-template
-                            template: clone-repo
-                        - name: build-push-task
-                          templateRef:
-                            name: build-push-wf-template
-                            template: build-and-push
-                          arguments:
-                            artifacts:
-                              - name: source
-                                from: "{{tasks.clone-repo-task.outputs.artifacts.source}}"
-                          dependencies: [clone-repo-task]
-                        - name: update-manifest-task
-                          templateRef:
-                            name: update-manifest-wf-template
-                            template: update-manifest
-                          arguments:
-                            artifacts:
-                              - name: source
-                                from: "{{tasks.clone-repo-task.outputs.artifacts.source}}"
-                          dependencies: [clone-repo-task, build-push-task]
+  triggers:                                               # Event আসলে কী action নেবে তার লিস্ট
+    - template:                                           # trigger-এর template definition শুরু
+        name: trigger-argo-workflow                       # এই trigger-এর নাম
+        argoWorkflow:                                     # trigger type — Argo Workflow submit করবে
+          group: argoproj.io                              # Workflow resource কোন API group-এ আছে
+          version: v1alpha1                               # সেই API group-এর কোন version
+          resource: workflows                             # কোন resource type create করবে — workflows
+          operation: submit                               # কী operation করবে — submit মানে নতুন workflow চালু করবে
+          source:                                         # কোন workflow submit করবে তার definition
+            resource:                                     # workflow resource-এর সম্পূর্ণ definition শুরু
+              apiVersion: argoproj.io/v1alpha1            # submit হওয়া Workflow-এর API version
+              kind: Workflow                              # submit হওয়া resource-এর type — Workflow
+              metadata:                                   # Workflow-এর metadata
+                generateName: argo-demo-                  # প্রতিটা workflow-এর নাম এই prefix দিয়ে শুরু হবে, শেষে random suffix যোগ হবে (যেমন argo-demo-x7k2p)
+                namespace: argo-events                    # Workflow কোন namespace-এ তৈরি হবে
+              spec:                                       # Workflow-এর মূল specification
+                arguments:                               # Workflow-এ যেসব parameter পাঠানো হবে
+                  parameters:                            # parameter-এর লিস্ট
+                    - name: repo-url                     # প্রথম parameter-এর নাম — clone-repo step এটা দিয়ে git clone করবে
+                      value: "https://github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git" # GitHub repo-এর URL
+                    - name: branch                       # দ্বিতীয় parameter — কোন branch থেকে code নেবে
+                      value: "main"                      # main branch ব্যবহার হবে
+                    - name: nexus-registry               # তৃতীয় parameter — image কোন registry-তে push হবে
+                      value: "172.17.0.232:5000"         # private Nexus registry-এর address
+                artifactRepositoryRef:                   # artifact (source code) কোথায় store হবে তার reference
+                  configMap: artifact-repository         # কোন ConfigMap থেকে MinIO storage config পড়বে — আগে তৈরি করা ConfigMap
+                entrypoint: ci                           # Workflow শুরু হলে কোন template প্রথমে run হবে — নিচের "ci" template
+                templates:                               # এই Workflow-এর ভেতরের template-গুলোর লিস্ট
+                  - name: ci                             # entrypoint-এ উল্লেখ করা "ci" template-এর definition
+                    dag:                                 # task-গুলো DAG (Directed Acyclic Graph) আকারে চলবে — dependency অনুযায়ী order ঠিক হবে
+                      tasks:                             # DAG-এর ভেতরের individual task-গুলোর লিস্ট
+                        - name: clone-repo-task          # প্রথম task-এর নাম — GitHub থেকে code clone করবে
+                          templateRef:                   # এই task কোন external WorkflowTemplate call করবে
+                            name: clone-repo-wf-template # কোন WorkflowTemplate — আগে তৈরি করা clone-repo template
+                            template: clone-repo         # সেই WorkflowTemplate-এর ভেতরে কোন নির্দিষ্ট template run করবে
+                        - name: build-push-task          # দ্বিতীয় task — image build করে registry-তে push করবে
+                          templateRef:                   # কোন external WorkflowTemplate call করবে
+                            name: build-push-wf-template # BuildKit দিয়ে image build করার WorkflowTemplate
+                            template: build-and-push     # সেই template-এর ভেতরের নির্দিষ্ট step
+                          arguments:                     # এই task-কে কী input দেওয়া হবে
+                            artifacts:                   # input artifact-এর লিস্ট
+                              - name: source             # artifact-এর নাম — build-push-wf-template এই নামে input expect করে
+                                from: "{{tasks.clone-repo-task.outputs.artifacts.source}}" # data আসছে clone-repo-task-এর output থেকে
+                          dependencies: [clone-repo-task] # এই task run হওয়ার আগে clone-repo-task শেষ হতে হবে
+                        - name: update-manifest-task     # তৃতীয় task — nginx-rollouts.yml-এ নতুন image tag বসিয়ে GitHub-এ push করবে
+                          templateRef:                   # কোন external WorkflowTemplate call করবে
+                            name: update-manifest-wf-template # manifest update করার WorkflowTemplate
+                            template: update-manifest    # সেই template-এর ভেতরের নির্দিষ্ট step
+                          arguments:                     # এই task-কে কী input দেওয়া হবে
+                            artifacts:                   # input artifact-এর লিস্ট
+                              - name: source             # artifact-এর নাম
+                                from: "{{tasks.clone-repo-task.outputs.artifacts.source}}" # clone-repo-task-এর output থেকে আসছে (build-push-task থেকে না, কারণ manifest edit করতে আসল source code লাগে)
+                          dependencies: [clone-repo-task, build-push-task] # দুটো task-ই শেষ হলে তবে এটা run হবে — clone থেকে code পেতে এবং build নিশ্চিত হতে
+
+
+
+# # github-sensor.yaml
+# apiVersion: argoproj.io/v1alpha1
+# kind: Sensor
+# metadata:
+#   name: github-sensor
+#   namespace: argo-events
+# spec:
+#   serviceAccountName: operate-workflow-sa
+
+#   dependencies:
+#     - name: github-dep
+#       eventSourceName: github-eventsource
+#       eventName: my-push-event
+
+#   triggers:
+#     - template:
+#         name: trigger-argo-workflow
+#         argoWorkflow:
+#           group: argoproj.io
+#           version: v1alpha1
+#           resource: workflows
+#           operation: submit
+#           source:
+#             resource:
+#               apiVersion: argoproj.io/v1alpha1
+#               kind: Workflow
+#               metadata:
+#                 generateName: argo-demo-
+#                 namespace: argo-events
+#               spec:
+#                 arguments:
+#                   parameters:
+#                     - name: repo-url
+#                       value: "https://github.com/nuruzzaman24x/argocd-zeroto-hero-2ndpart.git"
+#                     - name: branch
+#                       value: "main"
+#                     - name: nexus-registry
+#                       value: "172.17.0.232:5000"
+#                 artifactRepositoryRef:
+#                   configMap: artifact-repository
+#                 entrypoint: ci
+#                 templates:
+#                   - name: ci
+#                     dag:
+#                       tasks:
+#                         - name: clone-repo-task
+#                           templateRef:
+#                             name: clone-repo-wf-template
+#                             template: clone-repo
+#                         - name: build-push-task
+#                           templateRef:
+#                             name: build-push-wf-template
+#                             template: build-and-push
+#                           arguments:
+#                             artifacts:
+#                               - name: source
+#                                 from: "{{tasks.clone-repo-task.outputs.artifacts.source}}"
+#                           dependencies: [clone-repo-task]
+#                         - name: update-manifest-task
+#                           templateRef:
+#                             name: update-manifest-wf-template
+#                             template: update-manifest
+#                           arguments:
+#                             artifacts:
+#                               - name: source
+#                                 from: "{{tasks.clone-repo-task.outputs.artifacts.source}}"
+#                           dependencies: [clone-repo-task, build-push-task]

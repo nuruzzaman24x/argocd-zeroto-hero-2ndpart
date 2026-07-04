@@ -1,10 +1,42 @@
-# # github-eventsource.yaml
-# apiVersion: argoproj.io/v1alpha1
+apiVersion: argoproj.io/v1alpha1    # Argo Events-এর API version — এই CRD Argo Events থেকে আসছে, standard Kubernetes API না
+kind: EventSource                   # Resource type হলো EventSource — এটা বাইরের event (যেমন GitHub webhook) শোনার জন্য
+metadata:                           # এই object-এর পরিচয়মূলক তথ্য
+  name: github-eventsource          # EventSource-এর নাম — Sensor এই নাম দিয়ে এটাকে reference করবে
+  namespace: argo-events            # কোন namespace-এ এই resource তৈরি হবে
+spec:                               # মূল configuration শুরু
+  service:                          # EventSource-এর জন্য automatically একটা Kubernetes Service তৈরি করবে
+    ports:                          # Service কোন port-এ listen করবে তার definition
+      - port: 12000                 # Service-এর port — বাইরে থেকে এই port-এ request আসবে
+        targetPort: 12000           # Container-এর port — Service এখানে request forward করবে
+  github:                           # GitHub থেকে event নেওয়ার configuration শুরু
+    my-push-event:                  # এই event configuration-এর নাম — Sensor এই নামে event subscribe করবে
+      owner: "nuruzzaman24x"        # GitHub repository-এর owner/username
+      repository: "argocd-zeroto-hero-2ndpart" # কোন GitHub repository-এর event শুনবে
+      webhook:                      # GitHub webhook-এর configuration
+        endpoint: /push             # GitHub এই URL endpoint-এ POST request পাঠাবে (ngrok_url/push)
+        port: "12000"               # EventSource container কোন port-এ webhook শুনবে
+        method: POST                # GitHub webhook শুধু POST method-এ request পাঠাবে
+      events:                       # কোন ধরনের GitHub event শুনবে তার লিস্ট
+        - push                      # শুধু "push" event শুনবে — কেউ code push করলে trigger হবে
+      webhookSecret:                # GitHub webhook-এর secret validation-এর জন্য
+        name: github-webhook-secret # কোন Kubernetes Secret থেকে secret নেবে
+        key: secret                 # সেই Secret-এর ভেতরে কোন key-তে actual secret value আছে
+      insecure: false               # GitHub-এর সাথে HTTPS connection ব্যবহার হবে (secure)
+      active: true                  # এই event configuration active/enabled আছে
+      contentType: json             # GitHub webhook payload JSON format-এ আসবে
+
+
+
+# apiVersion: argoproj.io/v1alpha1    # 
 # kind: EventSource
 # metadata:
 #   name: github-eventsource
 #   namespace: argo-events
 # spec:
+#   service:
+#     ports:
+#       - port: 12000
+#         targetPort: 12000
 #   github:
 #     my-push-event:
 #       owner: "nuruzzaman24x"
@@ -21,32 +53,3 @@
 #       insecure: false
 #       active: true
 #       contentType: json
-
-
-
-apiVersion: argoproj.io/v1alpha1
-kind: EventSource
-metadata:
-  name: github-eventsource
-  namespace: argo-events
-spec:
-  service:                      # এই block যোগ করো
-    ports:
-      - port: 12000
-        targetPort: 12000
-  github:
-    my-push-event:
-      owner: "nuruzzaman24x"
-      repository: "argocd-zeroto-hero-2ndpart"
-      webhook:
-        endpoint: /push
-        port: "12000"
-        method: POST
-      events:
-        - push
-      webhookSecret:
-        name: github-webhook-secret
-        key: secret
-      insecure: false
-      active: true
-      contentType: json
