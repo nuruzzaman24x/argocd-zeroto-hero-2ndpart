@@ -2,6 +2,7 @@ apiVersion: argoproj.io/v1alpha1   # কোন API group/version অনুযা
 kind: WorkflowTemplate   # অবজেক্টের ধরন — এটা একটা reusable টেম্পলেট, বারবার কল করা যায়
 metadata:   # অবজেক্টের নাম/namespace ইত্যাদি মেটাডেটা সেকশন শুরু
   name: clone-repo-wf-template   # এই WorkflowTemplate-এর নাম, অন্য Workflow এই নাম দিয়ে এটাকে রেফার করবে
+  # namespace: argo-events          # # namespace define kore dite pari but amar set-context kora ache argo-events a, so ns define na korle argo-events ns ai applied hobe
 spec:   # মূল specification (আসল কনফিগারেশন) শুরু
   templates:   # এই WorkflowTemplate-এর ভেতরের স্টেপগুলোর লিস্ট শুরু
     - name: clone-repo   # এই স্টেপের নাম — Workflow থেকে কল করার সময় এই নামেই রেফার হবে

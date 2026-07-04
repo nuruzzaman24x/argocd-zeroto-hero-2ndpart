@@ -10,6 +10,7 @@ apiVersion: argoproj.io/v1alpha1   # Argo Workflows-এর API version ব্য
 kind: WorkflowTemplate              # এই resource-টা একটা reusable WorkflowTemplate, যেটা অন্য Workflow থেকে call করা যাবে
 metadata:
   name: build-push-wf-template       # এই WorkflowTemplate-এর নাম, যেটা দিয়ে এটাকে reference করা যাবে
+  # namespace: argo-events          # namespace define kore dite pari but amar set-context kora ache argo-events a, so ns define na korle argo-events ns ai applied hobe
 
 spec:
   templates:                         # এই WorkflowTemplate-এর ভেতরে যত template (step) define করা আছে তার লিস্ট
@@ -61,57 +62,3 @@ spec:
 
         securityContext:
           privileged: true             # Container টা privileged mode-এ চলবে — BuildKit-এর image building (kernel-level operations যেমন mount, namespace ব্যবহার) এর জন্য এটা দরকার
-
-
-
-# # # First of all, use the below command to create docker-config-secret for pushing images to your private registry
-# # # kubectl create secret generic docker-config-secret --from-file=/path/to/.docker/config.json -n argo
-# apiVersion: argoproj.io/v1alpha1
-# kind: WorkflowTemplate
-# metadata:
-#   name: build-push-wf-template
-
-# spec:
-#   templates:
-#     - name: build-and-push
-
-#       inputs:
-#         artifacts:
-#           - name: source
-#             path: /tmp/source
-
-#       volumes:
-#         - name: docker-config-secret
-#           secret:
-#             secretName: docker-config-secret
-
-#       container:
-#         image: moby/buildkit:v0.22.0
-
-#         command:
-#           - buildctl-daemonless.sh
-
-#         args:
-#           - build
-#           - --frontend
-#           - dockerfile.v0
-
-#           - --local
-#           - context=/tmp/source/v17-combining-argo-tools/app
-
-#           - --local
-#           - dockerfile=/tmp/source/v17-combining-argo-tools/app
-
-#           - --output
-#           - type=image,name={{workflow.parameters.nexus-registry}}/nginx:{{workflow.uid}},push=true,registry.insecure=true
-
-#         env:
-#           - name: DOCKER_CONFIG
-#             value: /.docker
-
-#         volumeMounts:
-#           - name: docker-config-secret
-#             mountPath: /.docker
-
-#         securityContext:
-#           privileged: true

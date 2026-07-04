@@ -1,7 +1,8 @@
 apiVersion: argoproj.io/v1alpha1   # Argo Workflows-এর কোন API group/version অনুযায়ী এই অবজেক্ট লেখা
 kind: WorkflowTemplate   # অবজেক্টের ধরন — reusable টেম্পলেট, বারবার কল করা যায়
 metadata:   # মেটাডেটা সেকশন শুরু
-  name: update-manifest-wf-template   # এই WorkflowTemplate-এর নাম, এই নামেই Workflow থেকে কল হবে
+  name: update-manifest-wf-template   # এই WorkflowTemplate-এর নাম, এই নামেই Workflow থেকে কল হব
+  namespace: argo-events              # namespace define kore dite pari but amar set-context kora ache argo-events a, so ns define na korle argo-events ns ai applied hobe
 
 spec:   # মূল specification শুরু
   templates:   # ভেতরের স্টেপগুলোর লিস্ট শুরু
