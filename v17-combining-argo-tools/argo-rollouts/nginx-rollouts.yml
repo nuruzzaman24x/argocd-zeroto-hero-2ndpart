@@ -36,7 +36,7 @@ spec:
 
       containers:
         - name: nginx-rollouts        # Container-এর নাম
-          image: 172.17.0.232:5000/nginx:317da374-95a5-4eae-86dc-9acd5b2c7348
+          image: 172.17.0.232:5000/nginx:40cd1306-bad2-45a3-bda4-1c7a88b88f7e
           imagePullPolicy: Always       # প্রতিবার pod তৈরির সময় নতুন করে image pull করবে (cache ব্যবহার করবে না)
 
           ports:
