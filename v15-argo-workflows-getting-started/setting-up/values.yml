@@ -7,4 +7,4 @@ server:
     enabled: true
     ingressClassName: nginx
     hosts:
-    - devops.hobbies
+    - devops.bangla
