@@ -72,7 +72,7 @@ spec:   # মূল specification শুরু
 
 # ৬. image:.*
 # এটা হলো সার্চ প্যাটার্ন (regex) — কী খুঁজছি।
-
+# sed -i 's|image:.*|image: {{workflow.parameters.nexus-registry}}/nginx:{{workflow.uid}}|' nginx-rollouts.yml
 # image: → এই আক্ষরিক টেক্সটটা খুঁজছে (ফাইলের ভেতরে যেই লাইনে image: লেখা আছে)
 # . → regex-এ এর মানে "যেকোনো একটা character"
 # * → এর আগের জিনিসটা "শূন্য বা তার বেশিবার" থাকতে পারে , তাহলে .* মিলিতভাবে মানে "এর পরে যা কিছুই থাকুক, যত characterই থাকুক" — মানে পুরো লাইনের বাকি অংশ (যেমন image: old-registry/nginx:v1) পুরোটাই ম্যাচ হবে।
