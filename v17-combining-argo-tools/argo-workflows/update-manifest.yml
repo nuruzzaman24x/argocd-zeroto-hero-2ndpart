@@ -48,8 +48,8 @@ spec:   # মূল specification শুরু
           git add .
           # সব পরিবর্তিত ফাইল (sed দিয়ে এডিট হওয়া nginx-rollouts.yml) staging-এ যুক্ত করা হচ্ছে
 
-          git commit -m "image.tag has been changed to {{workflow.uid}}" || true
-          # git commit -m "image.tag has been changed to {{workflow.uid}} [skip ci]" || true
+          # git commit -m "image.tag has been changed to {{workflow.uid}}" || true
+          git commit -m "image.tag has been changed to {{workflow.uid}} [skip ci]" || true
           # পরিবর্তনটা commit করা হচ্ছে, মেসেজে নতুন ট্যাগ উল্লেখ করে; "|| true" দেওয়া আছে যাতে commit করার মতো কিছু না থাকলেও (যেমন কোনো পরিবর্তন না হলে) স্ক্রিপ্ট error দিয়ে আটকে না যায়
 
           git push origin {{workflow.parameters.branch}}
