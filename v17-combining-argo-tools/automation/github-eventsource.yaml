@@ -9,7 +9,7 @@ spec:                               # মূল configuration শুরু
       - port: 12000                 # Service-এর port — বাইরে থেকে এই port-এ request আসবে
         targetPort: 12000           # Container-এর port — Service এখানে request forward করবে
   github:                           # GitHub থেকে event নেওয়ার configuration শুরু
-    my-push-event:                  # এই event configuration-এর নাম — Sensor এই নামে event subscribe করবে
+    n8n-push-event:                  # এই event configuration-এর নাম — Sensor এই নামে event subscribe করবে
       owner: "nuruzzaman24x"        # GitHub repository-এর owner/username
       repository: "argocd-zeroto-hero-2ndpart" # কোন GitHub repository-এর event শুনবে
       webhook:                      # GitHub webhook-এর configuration
