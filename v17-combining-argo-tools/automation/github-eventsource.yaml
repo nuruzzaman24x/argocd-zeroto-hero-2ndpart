@@ -19,7 +19,7 @@ spec:                               # মূল configuration শুরু
       events:                       # কোন ধরনের GitHub event শুনবে তার লিস্ট
         - push                      # শুধু "push" event শুনবে — কেউ code push করলে trigger হবে
       webhookSecret:                # GitHub webhook-এর secret validation-এর জন্য
-        name: github-webhook-secret # কোন Kubernetes Secret থেকে secret নেবে
+        name: github-webhook-secret # কোন Kubernetes Secret থেকে secret নেবে 
         key: secret                 # সেই Secret-এর ভেতরে কোন key-তে actual secret value আছে
       insecure: false               # GitHub-এর সাথে HTTPS connection ব্যবহার হবে (secure)
       active: true                  # এই event configuration active/enabled আছে

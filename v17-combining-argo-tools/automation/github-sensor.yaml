@@ -7,10 +7,20 @@ metadata:                                                 # এই object-এর
 spec:                                                     # মূল configuration শুরু
   serviceAccountName: operate-workflow-sa                 # Sensor কোন service account দিয়ে চলবে — এই sa-এর workflow create করার permission আছে
 
-  dependencies:                                           # Sensor কোন event-এর জন্য অপেক্ষা করবে তার লিস্ট
-    - name: github-dep                                    # এই dependency-এর নাম — নিচে triggers-এ এই নাম reference হয়
-      eventSourceName: github-eventsource                 # কোন EventSource থেকে event আসবে — আমাদের github-eventsource
-      eventName: my-push-event                            # সেই EventSource-এর কোন নির্দিষ্ট event শুনবে — github-eventsource-এ এই নামে define করা আছে
+  # dependencies:                                           # Sensor কোন event-এর জন্য অপেক্ষা করবে তার লিস্ট
+  #   - name: github-dep                                    # এই dependency-এর নাম — নিচে triggers-এ এই নাম reference হয়
+  #     eventSourceName: github-eventsource                 # কোন EventSource থেকে event আসবে — আমাদের github-eventsource
+  #     eventName: my-push-event                            # সেই EventSource-এর কোন নির্দিষ্ট event শুনবে — github-eventsource-এ এই নামে define করা আছে
+  dependencies:
+  - name: github-dep
+    eventSourceName: github-eventsource
+    eventName: n8n-push-event
+    filters:
+      exprs:
+        - expr: '!contains(commit_msg, "[skip ci]")'
+          fields:
+            - name: commit_msg
+              path: body.head_commit.message
 
   triggers:                                               # Event আসলে কী action নেবে তার লিস্ট
     - template:                                           # trigger-এর template definition শুরু
